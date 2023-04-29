@@ -1,2 +1,2 @@
 # NBA Pred.
-g 
+good
