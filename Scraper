@@ -1,0 +1,82 @@
+import requests
+import pandas as pd
+
+CSV_URL = 'https://projects.fivethirtyeight.com/nba-model/nba_elo_latest.csv'
+
+
+csv = pd.read_csv(CSV_URL, index_col=False)
+cols = ["neutral", "playoff", "elo1_pre", "elo2_pre","elo_prob1","elo_prob2","elo1_post","elo2_post","carm-elo1_pre","carm-elo2_pre","carm-elo_prob1","carm-elo_prob2","carm-elo1_post","carm-elo2_post","quality","importance","total_rating"]
+csv = csv.drop(columns=cols, axis=1)
+
+#print(csv.to_string())
+
+
+def reloadCSV():
+    CSV_URL = 'https://projects.fivethirtyeight.com/nba-model/nba_elo_latest.csv'
+
+    csv = pd.read_csv(CSV_URL)
+    cols = ["neutral", "playoff", "elo1_pre", "elo2_pre","elo_prob1","elo_prob2","elo1_post","elo2_post","carm-elo1_pre","carm-elo2_pre","carm-elo_prob1","carm-elo_prob2","carm-elo1_post","carm-elo2_post","quality","importance","total_rating"]
+    csv = csv.drop(columns=cols, axis=1)
+    return csv
+
+def findTeam(team, date): 
+    teamGames = csv.loc[csv['team1'] == team]
+    datedTeamGames = teamGames.loc[csv['date'] == date]
+    datedTeamGames.set_index('date')
+    teamDict = datedTeamGames.to_dict()
+    if teamDict['team1']:
+        for key, value in teamDict.items():
+            teamDict[key] = list(value.values())[0]
+    else:
+        return False
+
+    return teamDict
+
+def userInput():
+    teamName = input("Please enter team name, (3 letters, example: BOS): ").upper().strip()
+    date = input("Please input date to check (year-month-day, example: 2023-04-28): ").strip()
+    teamAsDict = findTeam(teamName, date)
+    if not teamAsDict:
+        print("Invalid input, try again")
+        return userInput()
+    return teamAsDict
+
+def retVal(team):
+    condOne = None #fanduel odds / what we will want the odds to be 
+    condTwo = None # team win %
+    condThree = None # team loss %
+    return ((((100 * ((abs(condOne) + 100)/abs(condOne))) - 100) * condTwo) - (100 * condThree))
+
+def teamROI(team):
+    condOne = None #fanduel odds / what we will want the odds to be 
+    condTwo = None # team win %
+    condThree = None # team loss %
+    if(condOne < 0):
+        return retVal(team)
+    return (condOne * condTwo) - (condThree * 100)
+
+def backwardsChecking(team1, team2, alpha):
+    t1ROI = teamROI(team1)
+    t1GS = None
+    t2ROI = teamROI(team2)
+    t2GS = None
+
+    if ((t1ROI < alpha) or (t2ROI > alpha)):
+        if (t1ROI > t2ROI):
+            return retVal(team1) if (t1GS > t2GS) else -100
+        return retVal(team2) if (t2GS > t1GS) else -100
+    print("No Bet")
+
+def chooseBet(team1, team2, alpha):
+    t1ROI = teamROI(team1)
+    t2ROI = teamROI(team2)
+
+    if t1ROI > alpha:
+        return team1['team1']
+    elif t2ROI > alpha:
+        return team2['team1']
+    else:
+        return None
+
+team = userInput()
+print(team)
