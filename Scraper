@@ -22,7 +22,7 @@ def reloadCSV():
     return csv
 
 def findTeamByDate(team, date): 
-    teamGames = csv.loc[(csv['HomeTeam'] == team) | (csv['AwayTeam'] == team)]
+    teamGames = csv.loc[((csv['HomeTeam'] == team) | (csv['AwayTeam'] == team))]
     datedTeamGames = teamGames.loc[csv['date'] == date]
     datedTeamGames.set_index('date')
     teamDict = datedTeamGames.to_dict()
@@ -36,8 +36,8 @@ def findTeamByDate(team, date):
 
 ## need to fix search by year
 def findTeamBySeason(team, year):
-     teamGames = csv.loc[csv['HomeTeam'] == team]
-     datedTeamGames = teamGames.loc[csv['date'].str.contains(year)] ## TODO
+     teamGames = csv.loc[((csv['HomeTeam'] == team) | (csv['AwayTeam'] == team))]
+     datedTeamGames = teamGames.loc[int(year) == csv['season']] ## TODO
      datedTeamGames.set_index('date')
      #teamDict = datedTeamGames.to_dict()
      #tempDict= {}
