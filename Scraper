@@ -7,6 +7,7 @@ CSV_URL = 'https://projects.fivethirtyeight.com/nba-model/nba_elo_latest.csv'
 csv = pd.read_csv(CSV_URL, index_col=False)
 cols = ["neutral", "playoff", "elo1_pre", "elo2_pre","elo_prob1","elo_prob2","elo1_post","elo2_post","carm-elo1_pre","carm-elo2_pre","carm-elo_prob1","carm-elo_prob2","carm-elo1_post","carm-elo2_post","quality","importance","total_rating"]
 csv = csv.drop(columns=cols, axis=1)
+csv.rename(columns={'team1': "HomeTeam", 'team2': 'AwayTeam', 'raptor_prob1': "HomeWinP", 'raptor_prob2': "AwayWinP"}, inplace=True)
 
 #print(csv.to_string())
 
@@ -17,14 +18,15 @@ def reloadCSV():
     csv = pd.read_csv(CSV_URL)
     cols = ["neutral", "playoff", "elo1_pre", "elo2_pre","elo_prob1","elo_prob2","elo1_post","elo2_post","carm-elo1_pre","carm-elo2_pre","carm-elo_prob1","carm-elo_prob2","carm-elo1_post","carm-elo2_post","quality","importance","total_rating"]
     csv = csv.drop(columns=cols, axis=1)
+    csv.rename(columns={'team1': "HomeTeam", 'team2': 'AwayTeam', 'raptor_prob1': "HomeWinP", 'raptor_prob2': "AwayWinP"}, inplace=True)
     return csv
 
 def findTeamByDate(team, date): 
-    teamGames = csv.loc[csv['team1'] == team]
+    teamGames = csv.loc[(csv['HomeTeam'] == team) | (csv['AwayTeam'] == team)]
     datedTeamGames = teamGames.loc[csv['date'] == date]
     datedTeamGames.set_index('date')
     teamDict = datedTeamGames.to_dict()
-    if teamDict['team1']:
+    if teamDict['HomeTeam']:
         for key, value in teamDict.items():
             teamDict[key] = list(value.values())[0]
     else:
@@ -34,18 +36,35 @@ def findTeamByDate(team, date):
 
 ## need to fix search by year
 def findTeamBySeason(team, year):
-     teamGames = csv.loc[csv['team1'] == team]
-     print(csv['date'][0:3])
-     datedTeamGames = teamGames.loc[...] ## TODO
+     teamGames = csv.loc[csv['HomeTeam'] == team]
+     datedTeamGames = teamGames.loc[csv['date'].str.contains(year)] ## TODO
      datedTeamGames.set_index('date')
-     teamDict = datedTeamGames.to_dict()
-     if teamDict['team1']:
-        for key, value in teamDict.items():
-            teamDict[key] = list(value.values())[0]
+     #teamDict = datedTeamGames.to_dict()
+     #tempDict= {}
+     #gameList = []
+     #if teamDict['team1']:
+     #   for key, value in teamDict.items():
+     #       tempDict[key] = list(value.values())[0]
+     gameDict = {}
+     gameList = []
+     if not len(datedTeamGames.index) == 0:
+         for game in datedTeamGames.itertuples():
+            gameDict['date'] = game.date
+            gameDict['season'] = game.season
+            gameDict['HomeTeam'] = game.HomeTeam
+            gameDict['AwayTeam'] = game.AwayTeam
+            gameDict['raptor1_pre'] = game.raptor1_pre
+            gameDict['raptor2_pre'] = game.raptor2_pre
+            gameDict['HomeWinP'] = game.HomeWinP
+            gameDict['AwayWinP'] = game.AwayWinP
+            gameDict['score1'] = game.score1
+            gameDict['score2'] = game.score2
+            gameList.append(gameDict)
+            gameDict = {}
      else:
         return False
 
-     return teamDict
+     return gameList
 
 
 def userInput():
@@ -54,29 +73,39 @@ def userInput():
     if yn == 'd':
         date = input("Please input date to check (year-month-day, example: 2023-04-28): ").strip()
         teamAsDict = findTeamByDate(teamName, date)
+        print(teamROI(teamAsDict, 15))
     else:
         season = input("Please input the season year in xxxx format: ")
-        teamAsDict = findTeamBySeason(teamName, season)
-    if not teamAsDict:
-        print("Invalid input, try again")
-        return userInput()
-    return teamAsDict
+        teamsAsDict = findTeamBySeason(teamName, season)
+        for row in teamsAsDict:
+            odds = teamROI(row, 15)
+            row['odds'] = odds
+
+        df = pd.DataFrame(columns=["date", "season", "HomeTeam", "AwayTeam", "raptor1_pre", "raptor2_pre", "HomeWinP", "AwayWinP", "score1", "score2", "odds"])
+        counter = 0
+        for row in teamsAsDict:
+            df.loc[counter] = pd.Series(row)
+            counter += 1
+        print(df)
 
 def retVal(team, alpha):
     condOne = None #fanduel odds / what we will want the odds to be 
-    condTwo = None # team win %
-    condThree = None # team loss %
+    condThree = team['HomeWinP']
+    condTwo = 1 - condThree
     return ((((100 * ((abs(condOne) + 100)/abs(condOne))) - 100) * condTwo) - (100 * condThree))
 
 def teamROI(team, alpha):
-    fav = retVal(team, alpha)
-    if fav > 100:
-        return underdog(team, alpha)
-    return fav
+    fav = favorite(team, alpha)
+    return (fav, underdog(team, alpha))
+
+def favorite(team, alpha):
+    condThree = team['HomeWinP']
+    condTwo = 1 - condThree
+    return (100/(1-(((alpha + (condTwo*100)/condThree) + 100) / 100)))
 
 def underdog(team, alpha):
-    condThree = None
-    condTwo = None
+    condThree = team['HomeWinP']
+    condTwo = 1 - condThree
     return (alpha + (condThree * 100)) / condTwo
 
 def backwardsChecking(team1, team2, alpha=15):
@@ -96,9 +125,9 @@ def chooseBet(team1, team2, alpha=15):
     t2ROI = teamROI(team2, alpha)
 
     if t1ROI > alpha:
-        return team1['team1']
+        return team1['HomeTeam']
     elif t2ROI > alpha:
-        return team2['team1']
+        return team2['HomeTeam']
     else:
         return None
 
