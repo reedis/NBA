@@ -62,21 +62,24 @@ def userInput():
         return userInput()
     return teamAsDict
 
-def retVal(team):
+def retVal(team, alpha):
     condOne = None #fanduel odds / what we will want the odds to be 
     condTwo = None # team win %
     condThree = None # team loss %
     return ((((100 * ((abs(condOne) + 100)/abs(condOne))) - 100) * condTwo) - (100 * condThree))
 
-def teamROI(team):
-    condOne = None #fanduel odds / what we will want the odds to be 
-    condTwo = None # team win %
-    condThree = None # team loss %
-    if(condOne < 0):
-        return retVal(team)
-    return (condOne * condTwo) - (condThree * 100)
+def teamROI(team, alpha):
+    fav = retVal(team, alpha)
+    if fav > 100:
+        return underdog(team, alpha)
+    return fav
 
-def backwardsChecking(team1, team2, alpha):
+def underdog(team, alpha):
+    condThree = None
+    condTwo = None
+    return (alpha + (condThree * 100)) / condTwo
+
+def backwardsChecking(team1, team2, alpha=15):
     t1ROI = teamROI(team1)
     t1GS = None
     t2ROI = teamROI(team2)
@@ -88,9 +91,9 @@ def backwardsChecking(team1, team2, alpha):
         return retVal(team2) if (t2GS > t1GS) else -100
     print("No Bet")
 
-def chooseBet(team1, team2, alpha):
-    t1ROI = teamROI(team1)
-    t2ROI = teamROI(team2)
+def chooseBet(team1, team2, alpha=15):
+    t1ROI = teamROI(team1, alpha)
+    t2ROI = teamROI(team2, alpha)
 
     if t1ROI > alpha:
         return team1['team1']
