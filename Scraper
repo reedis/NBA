@@ -19,7 +19,7 @@ def reloadCSV():
     csv = csv.drop(columns=cols, axis=1)
     return csv
 
-def findTeam(team, date): 
+def findTeamByDate(team, date): 
     teamGames = csv.loc[csv['team1'] == team]
     datedTeamGames = teamGames.loc[csv['date'] == date]
     datedTeamGames.set_index('date')
@@ -32,10 +32,31 @@ def findTeam(team, date):
 
     return teamDict
 
+## need to fix search by year
+def findTeamBySeason(team, year):
+     teamGames = csv.loc[csv['team1'] == team]
+     print(csv['date'][0:3])
+     datedTeamGames = teamGames.loc[...] ## TODO
+     datedTeamGames.set_index('date')
+     teamDict = datedTeamGames.to_dict()
+     if teamDict['team1']:
+        for key, value in teamDict.items():
+            teamDict[key] = list(value.values())[0]
+     else:
+        return False
+
+     return teamDict
+
+
 def userInput():
     teamName = input("Please enter team name, (3 letters, example: BOS): ").upper().strip()
-    date = input("Please input date to check (year-month-day, example: 2023-04-28): ").strip()
-    teamAsDict = findTeam(teamName, date)
+    yn = input("Do you want the season or a date for %s? (S/D): " % teamName).lower().strip()
+    if yn == 'd':
+        date = input("Please input date to check (year-month-day, example: 2023-04-28): ").strip()
+        teamAsDict = findTeamByDate(teamName, date)
+    else:
+        season = input("Please input the season year in xxxx format: ")
+        teamAsDict = findTeamBySeason(teamName, season)
     if not teamAsDict:
         print("Invalid input, try again")
         return userInput()
