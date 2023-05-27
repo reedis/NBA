@@ -1,6 +1,4 @@
-import requests
 import pandas as pd
-from IPython.display import display
 
 CSV_URL = 'https://projects.fivethirtyeight.com/nba-model/nba_elo_latest.csv'
 
