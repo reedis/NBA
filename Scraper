@@ -1,5 +1,6 @@
 import requests
 import pandas as pd
+from IPython.display import display
 
 CSV_URL = 'https://projects.fivethirtyeight.com/nba-model/nba_elo_latest.csv'
 
@@ -34,17 +35,10 @@ def findTeamByDate(team, date):
 
     return teamDict
 
-## need to fix search by year
 def findTeamBySeason(team, year):
      teamGames = csv.loc[((csv['HomeTeam'] == team) | (csv['AwayTeam'] == team))]
-     datedTeamGames = teamGames.loc[int(year) == csv['season']] ## TODO
+     datedTeamGames = teamGames.loc[int(year) == csv['season']]
      datedTeamGames.set_index('date')
-     #teamDict = datedTeamGames.to_dict()
-     #tempDict= {}
-     #gameList = []
-     #if teamDict['team1']:
-     #   for key, value in teamDict.items():
-     #       tempDict[key] = list(value.values())[0]
      gameDict = {}
      gameList = []
      if not len(datedTeamGames.index) == 0:
@@ -66,27 +60,32 @@ def findTeamBySeason(team, year):
 
      return gameList
 
-
 def userInput():
     teamName = input("Please enter team name, (3 letters, example: BOS): ").upper().strip()
-    yn = input("Do you want the season or a date for %s? (S/D): " % teamName).lower().strip()
+    yn = input("Do you want the season or day for %s? (S/D): " % teamName).lower().strip()
     if yn == 'd':
         date = input("Please input date to check (year-month-day, example: 2023-04-28): ").strip()
         teamAsDict = findTeamByDate(teamName, date)
         print(teamROI(teamAsDict, 15))
-    else:
+    elif yn == 's':
         season = input("Please input the season year in xxxx format: ")
         teamsAsDict = findTeamBySeason(teamName, season)
         for row in teamsAsDict:
-            odds = teamROI(row, 15)
-            row['odds'] = odds
+            fav, under = teamROI(row, 15)
+            row['favorite'] = fav
+            row['underdog'] = under
 
-        df = pd.DataFrame(columns=["date", "season", "HomeTeam", "AwayTeam", "raptor1_pre", "raptor2_pre", "HomeWinP", "AwayWinP", "score1", "score2", "odds"])
-        counter = 0
+        df = pd.DataFrame(columns=["date", "season", "HomeTeam", "AwayTeam", "raptor1_pre", "raptor2_pre", "HomeWinP", "AwayWinP", "score1", "score2", "favorite", "underdog"])
+        counter = 1
         for row in teamsAsDict:
             df.loc[counter] = pd.Series(row)
             counter += 1
-        print(df)
+        with pd.option_context('display.max_rows', None):
+            print(df)
+    else:
+        input('Invalid choice, press enter to try again')
+        userInput()
+
 
 def retVal(team, alpha):
     condOne = None #fanduel odds / what we will want the odds to be 
@@ -131,5 +130,4 @@ def chooseBet(team1, team2, alpha=15):
     else:
         return None
 
-team = userInput()
-print(team)
+userInput()
