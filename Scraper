@@ -89,25 +89,32 @@ def userInput():
 
 def retVal(team, alpha):
     condOne = None #fanduel odds / what we will want the odds to be 
-    condThree = team['HomeWinP']
-    condTwo = 1 - condThree
-    return ((((100 * ((abs(condOne) + 100)/abs(condOne))) - 100) * condTwo) - (100 * condThree))
+    homeWinP = team['HomeWinP']
+    awayWinP = 1 - homeWinP
+    return ((((100 * ((abs(condOne) + 100)/abs(condOne))) - 100) * awayWinP) - (100 * homeWinP))
 
 def teamROI(team, alpha):
     fav = favorite(team, alpha)
     return (fav, underdog(team, alpha))
 
 def favorite(team, alpha):
-    condThree = team['HomeWinP']
-    condTwo = 1 - condThree
-    return (100/(1-(((alpha + (condTwo*100)/condThree) + 100) / 100)))
+    homeWinP = team['HomeWinP']
+    awayWinP = 1 - homeWinP
+    if (homeWinP < .5):
+        return (alpha + (awayWinP*100))/homeWinP
+    else:
+        return (homeWinP*10000)/(homeWinP*100 - 100)
 
 def underdog(team, alpha):
-    condThree = team['HomeWinP']
-    condTwo = 1 - condThree
-    return (alpha + (condThree * 100)) / condTwo
+    homeWinP = team['HomeWinP']
+    awayWinP = 1 - homeWinP
+    if (homeWinP < .5):
+        return (homeWinP*10000)/(homeWinP*100 - 100)
+    else:
+        return (alpha + (awayWinP*100))/homeWinP
+        
 
-def backwardsChecking(team1, team2, alpha=15):
+def backwardsChecking(team1, team2, alpha=1):
     t1ROI = teamROI(team1)
     t1GS = None
     t2ROI = teamROI(team2)
