@@ -194,18 +194,18 @@ def home(team, alpha):
     homeWinP = team['winP']
     awayWinP = 1 - homeWinP
     if (homeWinP < .5):
-        return (alpha + (awayWinP*100))/(homeWinP - alpha)
+        return (alpha + (awayWinP*100))/(homeWinP)
     else:
-        return (homeWinP*10000)/(homeWinP*100 - 100)
+        return (homeWinP*10000)/(homeWinP*100 - 100 - alpha)
 
 
 def away(team, alpha):
     awayWinP = team['winP']
     homeWinP = 1 - awayWinP
-    if (homeWinP < .5):
-        return (homeWinP*10000)/(homeWinP*100 - 100)
+    if (awayWinP < .5):
+        return (alpha + (homeWinP*100))/(awayWinP)
     else:
-        return (alpha + (awayWinP*100))/(homeWinP - alpha)
+        return (awayWinP*10000)/(awayWinP*100 - 100 - alpha)
 
 
 def backwardsChecking(team1, team2, alpha=1):
