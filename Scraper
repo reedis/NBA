@@ -1,27 +1,62 @@
+import requests
 import pandas as pd
 
 CSV_URL = 'https://projects.fivethirtyeight.com/nba-model/nba_elo_latest.csv'
 
 
 csv = pd.read_csv(CSV_URL, index_col=False)
-cols = ["neutral", "playoff", "elo1_pre", "elo2_pre","elo_prob1","elo_prob2","elo1_post","elo2_post","carm-elo1_pre","carm-elo2_pre","carm-elo_prob1","carm-elo_prob2","carm-elo1_post","carm-elo2_post","quality","importance","total_rating"]
+cols = ["neutral", "playoff", "elo1_pre", "elo2_pre", "elo_prob1", "elo_prob2", "elo1_post", "elo2_post", "carm-elo1_pre",
+    "carm-elo2_pre", "carm-elo_prob1", "carm-elo_prob2", "carm-elo1_post", "carm-elo2_post", "quality", "importance", "total_rating"]
 csv = csv.drop(columns=cols, axis=1)
-csv.rename(columns={'team1': "HomeTeam", 'team2': 'AwayTeam', 'raptor_prob1': "HomeWinP", 'raptor_prob2': "AwayWinP"}, inplace=True)
+csv.rename(columns={'team1': "HomeTeam", 'team2': 'AwayTeam',
+           'raptor_prob1': "HomeWinP", 'raptor_prob2': "AwayWinP"}, inplace=True)
 
-#print(csv.to_string())
+# print(csv.to_string())
 
 
 def reloadCSV():
     CSV_URL = 'https://projects.fivethirtyeight.com/nba-model/nba_elo_latest.csv'
 
     csv = pd.read_csv(CSV_URL)
-    cols = ["neutral", "playoff", "elo1_pre", "elo2_pre","elo_prob1","elo_prob2","elo1_post","elo2_post","carm-elo1_pre","carm-elo2_pre","carm-elo_prob1","carm-elo_prob2","carm-elo1_post","carm-elo2_post","quality","importance","total_rating"]
+    cols = ["neutral", "playoff", "elo1_pre", "elo2_pre", "elo_prob1", "elo_prob2", "elo1_post", "elo2_post", "carm-elo1_pre",
+        "carm-elo2_pre", "carm-elo_prob1", "carm-elo_prob2", "carm-elo1_post", "carm-elo2_post", "quality", "importance", "total_rating"]
     csv = csv.drop(columns=cols, axis=1)
-    csv.rename(columns={'team1': "HomeTeam", 'team2': 'AwayTeam', 'raptor_prob1': "HomeWinP", 'raptor_prob2': "AwayWinP"}, inplace=True)
+    csv.rename(columns={'team1': "HomeTeam", 'team2': 'AwayTeam',
+               'raptor_prob1': "HomeWinP", 'raptor_prob2': "AwayWinP"}, inplace=True)
     return csv
 
-def findTeamByDate(team, date): 
-    teamGames = csv.loc[((csv['HomeTeam'] == team) | (csv['AwayTeam'] == team))]
+
+def getGamesOnDate(date):
+    games = csv.loc[csv['date'] == date]
+    games.set_index('date')
+    gameList = []
+    if not len(games.index) == 0:
+        for game in games.itertuples():
+            gameDict = {}
+            homeDict = {}
+            awayDict = {}
+            homeDict['team'] = game.HomeTeam
+            homeDict['winP'] = game.HomeWinP
+            homeDict['raptor1_pre'] = game.raptor1_pre
+            homeDict['score'] = game.score1
+            awayDict['team'] = game.AwayTeam
+            awayDict['winP'] = game.AwayWinP
+            awayDict['raptor2_pre'] = game.raptor2_pre
+            awayDict['score'] = game.score2
+            gameDict['home'] = homeDict
+            gameDict['away'] = awayDict
+            gameDict['date'] = game.date
+            gameDict['season'] = game.season
+            gameList.append(gameDict)
+    else:
+        return False
+
+    return gameList
+
+
+def findTeamByDate(team, date):
+    teamGames = csv.loc[((csv['HomeTeam'] == team) |
+                         (csv['AwayTeam'] == team))]
     datedTeamGames = teamGames.loc[csv['date'] == date]
     datedTeamGames.set_index('date')
     teamDict = datedTeamGames.to_dict()
@@ -33,84 +68,145 @@ def findTeamByDate(team, date):
 
     return teamDict
 
-def findTeamBySeason(team, year):
-     teamGames = csv.loc[((csv['HomeTeam'] == team) | (csv['AwayTeam'] == team))]
-     datedTeamGames = teamGames.loc[int(year) == csv['season']]
-     datedTeamGames.set_index('date')
-     gameDict = {}
-     gameList = []
-     if not len(datedTeamGames.index) == 0:
-         for game in datedTeamGames.itertuples():
+
+def getSeasonGames(season):
+    games = csv.loc[csv['season'] == int(season)]
+    games.set_index('date')
+    gameList = []
+    if not len(games.index) == 0:
+        for game in games.itertuples():
+            gameDict = {}
+            homeDict = {}
+            awayDict = {}
+            homeDict['team'] = game.HomeTeam
+            homeDict['winP'] = game.HomeWinP
+            homeDict['raptor1_pre'] = game.raptor1_pre
+            homeDict['score'] = game.score1
+            awayDict['team'] = game.AwayTeam
+            awayDict['winP'] = game.AwayWinP
+            awayDict['raptor2_pre'] = game.raptor2_pre
+            awayDict['score'] = game.score2
+            gameDict['home'] = homeDict
+            gameDict['away'] = awayDict
             gameDict['date'] = game.date
             gameDict['season'] = game.season
-            gameDict['HomeTeam'] = game.HomeTeam
-            gameDict['AwayTeam'] = game.AwayTeam
-            gameDict['raptor1_pre'] = game.raptor1_pre
-            gameDict['raptor2_pre'] = game.raptor2_pre
-            gameDict['HomeWinP'] = game.HomeWinP
-            gameDict['AwayWinP'] = game.AwayWinP
-            gameDict['score1'] = game.score1
-            gameDict['score2'] = game.score2
             gameList.append(gameDict)
-            gameDict = {}
-     else:
+    else:
         return False
 
-     return gameList
+    return gameList
+
+
+def findTeamBySeason(team, year):
+    teamGames = csv.loc[((csv['HomeTeam'] == team) | (csv['AwayTeam'] == team))]
+    games = teamGames.loc[int(year) == csv['season']]
+    games.set_index('date')
+    gameList = []
+    if not len(games.index) == 0:
+        for game in games.itertuples():
+            gameDict = {}
+            homeDict = {}
+            awayDict = {}
+            homeDict['team'] = game.HomeTeam
+            homeDict['winP'] = game.HomeWinP
+            homeDict['raptor1_pre'] = game.raptor1_pre
+            homeDict['score'] = game.score1
+            awayDict['team'] = game.AwayTeam
+            awayDict['winP'] = game.AwayWinP
+            awayDict['raptor2_pre'] = game.raptor2_pre
+            awayDict['score'] = game.score2
+            gameDict['home'] = homeDict
+            gameDict['away'] = awayDict
+            gameDict['date'] = game.date
+            gameDict['season'] = game.season
+            gameList.append(gameDict)
+    else:
+        return False
+
+    return gameList
+
 
 def userInput():
-    teamName = input("Please enter team name, (3 letters, example: BOS): ").upper().strip()
-    yn = input("Do you want the season or day for %s? (S/D): " % teamName).lower().strip()
+    teamName = False
+    choice1 = int(
+        input("would you like to look by date (1) or by team (2): ").lower().strip())
+    if choice1 == 2:
+        teamName = input(
+            "Please enter team name, (3 letters, example: BOS): ").upper().strip()
+    yn = input("Do you want the season or day? (S/D): ").lower().strip()
     if yn == 'd':
-        date = input("Please input date to check (year-month-day, example: 2023-04-28): ").strip()
-        teamAsDict = findTeamByDate(teamName, date)
-        print(teamROI(teamAsDict, 15))
+        date = input(
+            "Please input date to check (year-month-day, example: 2023-04-28): ").strip()
+        if teamName:
+            teamAsDict = findTeamByDate(teamName, date)
+            print(teamROI(teamAsDict, 15))
+        else:
+            teamAsDict = getGamesOnDate(date)
+            multiGamePrinter(teamAsDict)
     elif yn == 's':
         season = input("Please input the season year in xxxx format: ")
-        teamsAsDict = findTeamBySeason(teamName, season)
-        for row in teamsAsDict:
-            fav, under = teamROI(row, 15)
-            row['favorite'] = fav
-            row['underdog'] = under
-
-        df = pd.DataFrame(columns=["date", "season", "HomeTeam", "AwayTeam", "raptor1_pre", "raptor2_pre", "HomeWinP", "AwayWinP", "score1", "score2", "favorite", "underdog"])
-        counter = 1
-        for row in teamsAsDict:
-            df.loc[counter] = pd.Series(row)
-            counter += 1
-        with pd.option_context('display.max_rows', None):
-            print(df)
+        if teamName:
+            teamsAsDict = findTeamBySeason(teamName, season)
+        else:
+            teamsAsDict = getSeasonGames(season)
+        multiGamePrinter(teamsAsDict)
     else:
         input('Invalid choice, press enter to try again')
         userInput()
 
 
+def multiGamePrinter(gameDict):
+    for row in gameDict:
+        fav, under = teamROI(row, 15)
+        row['favorite'] = fav
+        row['underdog'] = under
+        row['HomeTeam'] = row['home']['team']
+        row['AwayTeam'] = row['away']['team']
+        row['raptor1_pre'] = row['home']['raptor1_pre']
+        row['raptor2_pre'] = row['away']['raptor2_pre']
+        row['HomeWinP'] = row['home']['winP']
+        row['AwayWinP'] = row['away']['winP']
+        row['score1'] = row['home']['score']
+        row['score2'] = row['away']['score']
+
+    df = pd.DataFrame(columns=["date", "season", "HomeTeam", "AwayTeam", "raptor1_pre",
+                      "raptor2_pre", "HomeWinP", "AwayWinP", "score1", "score2", "favorite", "underdog"])
+    counter = 1
+    for row in gameDict:
+        df.loc[counter] = pd.Series(row)
+        counter += 1
+    with pd.option_context('display.max_rows', None):
+        print(df)
+
+
 def retVal(team, alpha):
-    condOne = None #fanduel odds / what we will want the odds to be 
+    condOne = None  # fanduel odds / what we will want the odds to be 
     homeWinP = team['HomeWinP']
     awayWinP = 1 - homeWinP
     return ((((100 * ((abs(condOne) + 100)/abs(condOne))) - 100) * awayWinP) - (100 * homeWinP))
 
+
 def teamROI(team, alpha):
-    fav = favorite(team, alpha)
-    return (fav, underdog(team, alpha))
+    return (home(team['home'], alpha), away(team['away'], alpha))
 
-def favorite(team, alpha):
-    homeWinP = team['HomeWinP']
+
+def home(team, alpha):
+    homeWinP = team['winP']
     awayWinP = 1 - homeWinP
     if (homeWinP < .5):
-        return (alpha + (awayWinP*100))/homeWinP
+        return (alpha + (awayWinP*100))/(homeWinP - alpha)
     else:
         return (homeWinP*10000)/(homeWinP*100 - 100)
 
-def underdog(team, alpha):
-    homeWinP = team['HomeWinP']
-    awayWinP = 1 - homeWinP
+
+def away(team, alpha):
+    awayWinP = team['winP']
+    homeWinP = 1 - awayWinP
     if (homeWinP < .5):
         return (homeWinP*10000)/(homeWinP*100 - 100)
     else:
-        return (alpha + (awayWinP*100))/homeWinP
-        
+        return (alpha + (awayWinP*100))/(homeWinP - alpha)
+
 
 def backwardsChecking(team1, team2, alpha=1):
     t1ROI = teamROI(team1)
@@ -123,6 +219,7 @@ def backwardsChecking(team1, team2, alpha=1):
             return retVal(team1) if (t1GS > t2GS) else -100
         return retVal(team2) if (t2GS > t1GS) else -100
     print("No Bet")
+
 
 def chooseBet(team1, team2, alpha=15):
     t1ROI = teamROI(team1, alpha)
