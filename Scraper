@@ -53,7 +53,7 @@ def getGamesOnDate(date):
 
     return gameList
 
-
+#need to fix this one
 def findTeamByDate(team, date):
     teamGames = csv.loc[((csv['HomeTeam'] == team) |
                          (csv['AwayTeam'] == team))]
@@ -200,8 +200,8 @@ def home(team, alpha):
 
 
 def away(team, alpha):
-    awayWinP = team['winP']
-    homeWinP = 1 - awayWinP
+    homeWinP = team['winP']
+    awayWinP = 1 - homeWinP
     if (homeWinP < .5):
         return (homeWinP*10000)/(homeWinP*100 - 100)
     else:
