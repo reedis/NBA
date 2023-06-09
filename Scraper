@@ -53,6 +53,16 @@ def getGamesOnDate(date):
 
     return gameList
 
+def gamesByMonth(month, season):
+    seasonList = getSeasonGames(season)
+    returnList = []
+    for game in seasonList:
+        gameMonth = game['date'][5:7]
+        if gameMonth == month:
+            returnList.append(game)
+
+    return returnList
+
 #need to fix this one
 def findTeamByDate(team, date):
     teamGames = csv.loc[((csv['HomeTeam'] == team) |
@@ -133,7 +143,7 @@ def userInput():
     if choice1 == 2:
         teamName = input(
             "Please enter team name, (3 letters, example: BOS): ").upper().strip()
-    yn = input("Do you want the season or day? (S/D): ").lower().strip()
+    yn = input("Do you want the season or day? (S/M/D): ").lower().strip()
     if yn == 'd':
         date = input(
             "Please input date to check (year-month-day, example: 2023-04-28): ").strip()
@@ -143,6 +153,12 @@ def userInput():
         else:
             teamAsDict = getGamesOnDate(date)
             multiGamePrinter(teamAsDict)
+    elif yn == 'm':
+        print('Note team search by month not yet implemented')
+        month = input('please input the month in XX format (May = 05): ')
+        season = input('which season is this for (format xxxx): ')
+        teamsAsDict = gamesByMonth(month, season)
+        multiGamePrinter(teamsAsDict)
     elif yn == 's':
         season = input("Please input the season year in xxxx format: ")
         if teamName:
@@ -193,7 +209,7 @@ def teamROI(team, alpha):
 def home(team, alpha):
     homeWinP = team['winP']
     awayWinP = 1 - homeWinP
-    if (homeWinP < .5):
+    if (homeWinP < .58):
         return (alpha + (awayWinP*100))/(homeWinP)
     else:
         return (homeWinP*10000)/(homeWinP*100 - 100 - alpha)
@@ -202,7 +218,7 @@ def home(team, alpha):
 def away(team, alpha):
     awayWinP = team['winP']
     homeWinP = 1 - awayWinP
-    if (awayWinP < .5):
+    if (awayWinP < .58):
         return (alpha + (homeWinP*100))/(awayWinP)
     else:
         return (awayWinP*10000)/(awayWinP*100 - 100 - alpha)
