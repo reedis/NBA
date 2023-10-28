@@ -1,6 +1,8 @@
 import pandas as pd
 import datetime
 
+alpha=50
+
 seasonCSV = "sportsref_download.xls"
 def validateUser(userNumber):
     if userNumber == 1:
@@ -23,18 +25,26 @@ def main():
     seasonList = seasonList.drop(["Start (ET)", "PTS", "PTS.1", "Unnamed: 6", "Unnamed: 7", "Attend.", "Arena", "Notes"], axis=1)
     seasonList.set_index("Date", inplace=True)
     teamsDict = teamCleaning(df)
-    teamPairings = weeklyMatchup(seasonList)
+    teamPairings = weeklyMatchup(str(datetime.date.today()), seasonList)
     print(buildAnalytics(teamPairings, teamsDict))
+    userIn = input("See tomorrows Games too?(Y/N) ").capitalize()
+    if(userIn == 'Y'):
+        time = (datetime.datetime.now() + datetime.timedelta(1)).strftime('%Y-%m-%d')
+        newPairings = weeklyMatchup(time, seasonList)
+        print("**NOTE** USING DAY BEFORE DATA SO NOT ACCURATE **NOTE**")
+        print(buildAnalytics(newPairings, teamsDict))
+        print("**NOTE** USING DAY BEFORE DATA SO NOT ACCURATE **NOTE**")
     
 def buildAnalytics(teamPairings, teamsDict):
     evaluatedDict = {}
     for home, away in teamPairings:
-        evaluatedDict[(home, away)] = gameEval(teamsDict[home], teamsDict[away])
+        evaled = gameEval(teamsDict[home], teamsDict[away])
+        evaluatedDict[(home, away)] = (evaled, buildROI(evaled))
     
-    evalDf = pd.DataFrame(columns=["Home", "Away", "Eval"])
+    evalDf = pd.DataFrame(columns=["Home", "Away", "Eval", "Home ROI (HF)", "Away ROI (HF)", "Home ROI (AF)", "Away ROI (AF)"])
     i = 0
     for key, value in evaluatedDict.items():
-        evalDf.loc[i] = [str(key[0])] + [key[1]] + [value]
+        evalDf.loc[i] = [key[0]] + [key[1]] + [value[0]] + [value[1][0][0]] + [value[1][0][1]] + [value[1][1][0]] + [value[1][1][1]]
         i += 1
     return evalDf
 
@@ -42,7 +52,15 @@ def buildAnalytics(teamPairings, teamsDict):
 def gameEval(homeTeamPoints, awayTeamPoints):
     htPowerPoints = homeTeamPoints**14.3
     atPowerPoints = awayTeamPoints**14.3
-    return htPowerPoints / (htPowerPoints+atPowerPoints)
+    return (htPowerPoints / (htPowerPoints+atPowerPoints))
+
+def buildROI(homeP):
+    afHomeROI = (alpha + ((1 - homeP)*100))/(homeP)
+    afAwayROI = ((1-homeP)*10000)/((1-homeP)*100 - 100 - alpha)
+    hfHomeROI = (homeP*10000)/(homeP*100 - 100 - alpha)
+    hfAwayROI = (alpha + (homeP*100))/(1 - homeP)
+
+    return ((hfHomeROI, hfAwayROI), (afHomeROI, afAwayROI))
 
 def teamCleaning(frame):
     teamsDict = {}
@@ -59,11 +77,11 @@ def teamCleaning(frame):
 
     return teamsDict
 
-def weeklyMatchup(seasonList):
+def weeklyMatchup(dateToReturn, seasonList):
     listOfMatchups = []
     for index, row in seasonList.iterrows():
         date = getFormattedTime(index)
-        if (str(datetime.date.today()) == date):
+        if (dateToReturn == date):
             listOfMatchups.append((row['Home/Neutral'], row['Visitor/Neutral']))
 
     return listOfMatchups
