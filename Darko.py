@@ -1,6 +1,18 @@
 import pandas as pd
 import datetime
 
+##-------------------------------------------------------##
+#                 Dictionary Structures:                  #
+# Team-playerDPM Dict:                                    #
+#    (Key:Value) = (TeamName: (PlayerInfo))               #
+#    PlayerInfo Dict:                                     #
+#        (Key:Value): = (PlayerName: (DPM, (ODPM, DDPM))) #
+#                                                         #
+# Player-Minute Dict:                                     #
+#    (Key:Value) = (PlayerName: (Minutes, Pace))          #
+#                                                         #
+##-------------------------------------------------------##
+
 alpha=50
 
 seasonCSV = "sportsref_download.xls"
@@ -17,23 +29,24 @@ sam = "samgoshen"
 def main():
     userIn = int(input("User 1 or 2: "))
     user = validateUser(userIn)
-    csv = '/Users/{}/Downloads/DARKO.csv'.format(user)
-    seasonCSV = '/Users/{}/Downloads/sportsref_download.csv'.format(user)
-    df = pd.read_csv(csv)
-    df = df.set_index("Team")
-    seasonList = pd.read_csv(seasonCSV)
-    seasonList = seasonList.drop(["Start (ET)", "PTS", "PTS.1", "Unnamed: 6", "Unnamed: 7", "Attend.", "Arena", "Notes"], axis=1)
-    seasonList.set_index("Date", inplace=True)
-    teamsDict = teamCleaning(df)
-    teamPairings = weeklyMatchup(str(datetime.date.today()), seasonList)
-    print(buildAnalytics(teamPairings, teamsDict))
-    userIn = input("See tomorrows Games too?(Y/N) ").capitalize()
-    if(userIn == 'Y'):
-        time = (datetime.datetime.now() + datetime.timedelta(1)).strftime('%Y-%m-%d')
-        newPairings = weeklyMatchup(time, seasonList)
-        print("**NOTE** USING DAY BEFORE DATA SO NOT ACCURATE **NOTE**")
-        print(buildAnalytics(newPairings, teamsDict))
-        print("**NOTE** USING DAY BEFORE DATA SO NOT ACCURATE **NOTE**")
+    csvMinutes = '/Users/{}/Downloads/DARKO.csv'.format(user)
+    csvPlayer = '/Users/{}/Downloads/DARKOPLAYER.csv'.format(user)
+    seasonCSV = '/Users/{}/Downloads/sportsref_download_november.csv'.format(user)
+    minutesDF = pd.read_csv(csvMinutes)
+    minutesDF.drop(inplace=True, labels=["PTS", "AST","DREB","OREB","BLK","STL","TOV","FGA","FTA","FG3A","RimFGA", "PF", "date_of_projection", "Experience"], axis=1)
+    minutesDF.set_index("Team", inplace=True)
+    teamPlayerMinutes = minutesPerPlayer(minutesDF)
+    playerDf = pd.read_csv(csvPlayer)
+    playerDf = playerDf[["Team", "Player","DPM","O-DPM","D-DPM"]]
+    playerDf.set_index("Team", inplace=True)
+    teamPlayerDPM = dpmPerPlayer(playerDf)
+    teamDPM = getTeamDPMS(teamPlayerDPM, teamPlayerMinutes)
+    print(teamDPM)
+    #seasonList = pd.read_csv(seasonCSV)
+    #seasonList = seasonList.drop(["Start (ET)", "PTS", "PTS.1", "Unnamed: 6", "Unnamed: 7", "Attend.", "Arena", "Notes"], axis=1)
+    #seasonList.set_index("Date", inplace=True)
+    #teamPairings = weeklyMatchup(str(datetime.date.today()), seasonList)
+    #print(buildAnalytics(teamPairings, teamsDict))
     
 def buildAnalytics(teamPairings, teamsDict):
     evaluatedDict = {}
@@ -48,7 +61,6 @@ def buildAnalytics(teamPairings, teamsDict):
         i += 1
     return evalDf
 
-
 def gameEval(homeTeamPoints, awayTeamPoints):
     htPowerPoints = homeTeamPoints**14.3
     atPowerPoints = awayTeamPoints**14.3
@@ -62,19 +74,41 @@ def buildROI(homeP):
 
     return ((hfHomeROI, hfAwayROI), (afHomeROI, afAwayROI))
 
-def teamCleaning(frame):
+def minutesPerPlayer(frame):
+    teamsDict = {}
+    for index, row in frame.iterrows():
+        teamsDict[row['Player']] = (row['Minutes'], row['Pace'])
+
+    return teamsDict
+
+def dpmPerPlayer(frame):
     teamsDict = {}
     teamList = frame.index
-    listOfTeams = []
     for item in teamList:
         if item in teamsDict:
             next
         else:
-            teamsDict[item] = 0
-            listOfTeams.append(item)
+            teamsDict[item] = []
     for index, row in frame.iterrows():
-        teamsDict[index] += row['PTS']
+        teamsDict[index].append((row['Player'],(row['DPM'], (row['O-DPM'], row['D-DPM']))))
 
+    return teamsDict
+
+def getTeamDPMS(dpmDict, minDict):
+    teamsDict = {}
+    teamList = dpmDict.keys()
+    for team in teamList:
+        if team not in teamsDict:
+            teamsDict[team] = (0, 0)
+
+        dpmTeam = dpmDict[team]
+        for playerData in dpmTeam:
+            ## takes the minutes for a player from the player-minute dictionary and divieds by total gametime for playable time weight:
+            playerMinuteWeight = (minDict[playerData[0]][0]/48)
+            ## ODPM is valued higher than DDPM at a 1.5:1 ratio
+            ODPM = teamsDict[team][0] + ((playerData[1][1][0] * playerMinuteWeight) * 1.5)
+            DDPM = teamsDict[team][1] + (playerData[1][1][1] * playerMinuteWeight)
+            teamsDict[team] = (ODPM, DDPM)
     return teamsDict
 
 def weeklyMatchup(dateToReturn, seasonList):
