@@ -13,6 +13,16 @@ import datetime
 #                                                         #
 ##-------------------------------------------------------##
 
+######################## LINKS ############################
+# schedule link = https://www.basketball-reference.com/leagues/NBA_2024_games-november.html
+# DPM/Min link = https://apanalytics.shinyapps.io/DARKO/
+###########################################################
+
+################ NAMING CONVENTIONS ######################
+# Minutes (Daily Player Per-Game Projections): DARKO.csv
+# Player (Current Player Skill Projections): DARKOPLAYER.csv
+# Schedule: sportsref_download_CURRENTMONTH.csv -- CURRENTMONTH SHOULD BE LOWER CASE
+
 alpha=50
 
 seasonCSV = "sportsref_download.xls"
