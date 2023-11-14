@@ -29,7 +29,7 @@ import math
 # Player (Current Player Skill Projections): DARKOPLAYER.csv
 # Schedule: sportsref_download_CURRENTMONTH.csv -- CURRENTMONTH SHOULD BE LOWER CASE
 
-alpha=50
+alpha=15
 
 seasonCSV = "sportsref_download.xls"
 def validateUser(userNumber):
@@ -77,6 +77,7 @@ def buildAnalytics(teamPairings, avgODPM, avgDDPM, teamDPM):
         homeWin = homeWinChance(homeElo, awayElo)
         print(home)
         print(homeWin)
+        print(buildROI(homeWin))
         print('----------')
         
     
@@ -107,12 +108,10 @@ def homeWinChance(homeElo, awayElo):
     return (1/((10**(-(homeElo - awayElo) / 400)) + 1))
 
 def buildROI(homeP):
-    afHomeROI = (alpha + ((1 - homeP)*100))/(homeP)
-    afAwayROI = ((1-homeP)*10000)/((1-homeP)*100 - 100 - alpha)
-    hfHomeROI = (homeP*10000)/(homeP*100 - 100 - alpha)
-    hfAwayROI = (alpha + (homeP*100))/(1 - homeP)
-
-    return ((hfHomeROI, hfAwayROI), (afHomeROI, afAwayROI))
+    if(homeP > .5):
+        return ((homeP*10000)/(homeP*100 - 100 - alpha), (alpha + (homeP*100))/(1 - homeP))
+    else:
+        return ((alpha + ((1 - homeP)*100))/(homeP), ((1-homeP)*10000)/((1-homeP)*100 - 100 - alpha))
 
 def minutesPerPlayer(frame):
     teamsDict = {}
