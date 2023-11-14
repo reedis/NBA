@@ -1,5 +1,6 @@
 import pandas as pd
 import datetime
+import math
 
 ##-------------------------------------------------------##
 #                 Dictionary Structures:                  #
@@ -11,6 +12,11 @@ import datetime
 # Player-Minute Dict:                                     #
 #    (Key:Value) = (PlayerName: (Minutes, Pace))          #
 #                                                         #
+# Team-DPM Dict:                                          #
+#    (Key:Value) = (TeamName: (ODPM, DDPM))               #
+#                                                         #
+# Avg-Team-DPM Dict:                                      #
+#    (Key:Value) = (TeamName: (AvgODPM, AvgDDPM))         #
 ##-------------------------------------------------------##
 
 ######################## LINKS ############################
@@ -36,6 +42,7 @@ def validateUser(userNumber):
     
 isaac = "isaacreed"
 sam = "samgoshen"
+debug = True
 def main():
     userIn = int(input("User 1 or 2: "))
     user = validateUser(userIn)
@@ -51,19 +58,26 @@ def main():
     playerDf = playerDf[["Team", "Player","DPM","O-DPM","D-DPM"]]
     playerDf.set_index("Team", inplace=True)
     teamPlayerDPM = dpmPerPlayer(playerDf)
-    teamDPM = getTeamDPMS(teamPlayerDPM, teamPlayerMinutes)
-    print(teamDPM)
-    #seasonList = pd.read_csv(seasonCSV)
-    #seasonList = seasonList.drop(["Start (ET)", "PTS", "PTS.1", "Unnamed: 6", "Unnamed: 7", "Attend.", "Arena", "Notes"], axis=1)
-    #seasonList.set_index("Date", inplace=True)
-    #teamPairings = weeklyMatchup(str(datetime.date.today()), seasonList)
-    #print(buildAnalytics(teamPairings, teamsDict))
+    avgODPM, avgDDPM, teamDPM = getTeamDPMs(teamPlayerDPM, teamPlayerMinutes)
+    if(debug):
+        print(healthCheck(avgODPM, avgDDPM, teamDPM))
+    seasonList = pd.read_csv(seasonCSV)
+    seasonList = seasonList.drop(["Start (ET)", "PTS", "PTS.1", "Unnamed: 6", "Unnamed: 7", "Attend.", "Arena", "Notes"], axis=1)
+    seasonList.set_index("Date", inplace=True)
+    teamPairings = weeklyMatchup(str(datetime.date.today()), seasonList)
+    buildAnalytics(teamPairings, avgODPM, avgDDPM, teamDPM)
     
-def buildAnalytics(teamPairings, teamsDict):
+def buildAnalytics(teamPairings, avgODPM, avgDDPM, teamDPM):
     evaluatedDict = {}
     for home, away in teamPairings:
-        evaled = gameEval(teamsDict[home], teamsDict[away])
-        evaluatedDict[(home, away)] = (evaled, buildROI(evaled))
+        print('-----------------')
+        homeStrength = pythagExpect(teamDPM[home][0], teamDPM[home][1], avgODPM, avgDDPM)
+        homeElo = elo(homeStrength)
+        awayStrength = pythagExpect(teamDPM[away][0], teamDPM[away][1], avgODPM, avgDDPM)
+        awayElo = elo(awayStrength)
+        print(homeElo)
+        print(awayElo)
+        
     
     evalDf = pd.DataFrame(columns=["Home", "Away", "Eval", "Home ROI (HF)", "Away ROI (HF)", "Home ROI (AF)", "Away ROI (AF)"])
     i = 0
@@ -72,10 +86,21 @@ def buildAnalytics(teamPairings, teamsDict):
         i += 1
     return evalDf
 
-def gameEval(homeTeamPoints, awayTeamPoints):
-    htPowerPoints = homeTeamPoints**14.3
-    atPowerPoints = awayTeamPoints**14.3
-    return (htPowerPoints / (htPowerPoints+atPowerPoints))
+def healthCheck(avgOdpm, avgDDpm, teams):
+    sumTotal = 0
+    for team in teams.keys():
+        sumTotal += (pythagExpect(teams[team][0], teams[team][1], avgOdpm, avgDDpm) * 82)
+
+    return sumTotal/30
+
+def elo(score):
+    return (1504.6-(450*(math.log10((1/score)-1))))
+
+# Projected Team win % for season -- NOT MATCHUP
+def pythagExpect(teamODPM, teamDDPM, avgODPM, avgDDPM):
+    var1 = ((100 + teamODPM) - (100 + avgDDPM) + 100)**14.3
+    var2 = ((100 - teamDDPM) + (100 + avgODPM) - 100)**14.3
+    return (var1 / (var1 + var2))
 
 def buildROI(homeP):
     afHomeROI = (alpha + ((1 - homeP)*100))/(homeP)
@@ -105,9 +130,12 @@ def dpmPerPlayer(frame):
 
     return teamsDict
 
-def getTeamDPMS(dpmDict, minDict):
+def getTeamDPMs(dpmDict, minDict):
     teamsDict = {}
     teamList = dpmDict.keys()
+    sumTotalDDPM = 0
+    sumTotalODPM = 0
+    teamsInLeauge = 30
     for team in teamList:
         if team not in teamsDict:
             teamsDict[team] = (0, 0)
@@ -116,12 +144,17 @@ def getTeamDPMS(dpmDict, minDict):
         for playerData in dpmTeam:
             ## takes the minutes for a player from the player-minute dictionary and divides by total gametime for playable time weight:
             playerMinuteWeight = (minDict[playerData[0]][0]/48)
+            ## takes in the players pace
+            paceWeight = minDict[playerData[0]][1]/100.0
             ## ODPM is valued higher than DDPM at a 1.5:1 ratio
-            ODPM = teamsDict[team][0] + ((playerData[1][1][0] * playerMinuteWeight) * 0.8)
-            DDPM = teamsDict[team][1] + (playerData[1][1][1] * playerMinuteWeight * 0.8)
+            ODPM = teamsDict[team][0] + (playerData[1][1][0] * playerMinuteWeight * paceWeight * 0.8)
+            DDPM = teamsDict[team][1] + (playerData[1][1][1] * playerMinuteWeight * paceWeight * 0.8)
+            sumTotalDDPM += (playerData[1][1][1] * playerMinuteWeight * paceWeight * 0.8)
+            sumTotalODPM += (playerData[1][1][0] * playerMinuteWeight * paceWeight * 0.8)
             # multiply by 0.8 to account for diminishing returns between individual player talent and on-court team talent
             teamsDict[team] = (ODPM , DDPM)
-    return teamsDict
+
+    return (sumTotalODPM/teamsInLeauge), (sumTotalDDPM/teamsInLeauge), teamsDict
 
 def weeklyMatchup(dateToReturn, seasonList):
     listOfMatchups = []
@@ -131,8 +164,6 @@ def weeklyMatchup(dateToReturn, seasonList):
             listOfMatchups.append((row['Home/Neutral'], row['Visitor/Neutral']))
 
     return listOfMatchups
-
-            
 
 def getFormattedTime(index):
     splitIndex = index.split(', ')
@@ -168,3 +199,4 @@ def getNumericalMonth(date):
         return 12
 
 main()
+
