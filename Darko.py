@@ -75,8 +75,8 @@ def buildAnalytics(teamPairings, avgODPM, avgDDPM, teamDPM):
         awayStrength = pythagExpect(teamDPM[away][0], teamDPM[away][1], avgODPM, avgDDPM)
         awayElo = elo(awayStrength)
         homeWin = homeWinChance(homeElo, awayElo)
-        print(home)
-        print(homeWin)
+        print('{}, {}'.format(home, away))
+        print('Home win % chance: {}'.format(homeWin*100))
         print(buildROI(homeWin))
         print('----------')
         
