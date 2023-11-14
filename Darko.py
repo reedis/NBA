@@ -42,7 +42,7 @@ def validateUser(userNumber):
     
 isaac = "isaacreed"
 sam = "samgoshen"
-debug = True
+debug = False
 def main():
     userIn = int(input("User 1 or 2: "))
     user = validateUser(userIn)
@@ -70,13 +70,14 @@ def main():
 def buildAnalytics(teamPairings, avgODPM, avgDDPM, teamDPM):
     evaluatedDict = {}
     for home, away in teamPairings:
-        print('-----------------')
         homeStrength = pythagExpect(teamDPM[home][0], teamDPM[home][1], avgODPM, avgDDPM)
-        homeElo = elo(homeStrength)
+        homeElo = elo(homeStrength) + 70
         awayStrength = pythagExpect(teamDPM[away][0], teamDPM[away][1], avgODPM, avgDDPM)
         awayElo = elo(awayStrength)
-        print(homeElo)
-        print(awayElo)
+        homeWin = homeWinChance(homeElo, awayElo)
+        print(home)
+        print(homeWin)
+        print('----------')
         
     
     evalDf = pd.DataFrame(columns=["Home", "Away", "Eval", "Home ROI (HF)", "Away ROI (HF)", "Home ROI (AF)", "Away ROI (AF)"])
@@ -101,6 +102,9 @@ def pythagExpect(teamODPM, teamDDPM, avgODPM, avgDDPM):
     var1 = ((100 + teamODPM) - (100 + avgDDPM) + 100)**14.3
     var2 = ((100 - teamDDPM) + (100 + avgODPM) - 100)**14.3
     return (var1 / (var1 + var2))
+
+def homeWinChance(homeElo, awayElo):
+    return (1/((10**(-(homeElo - awayElo) / 400)) + 1))
 
 def buildROI(homeP):
     afHomeROI = (alpha + ((1 - homeP)*100))/(homeP)
