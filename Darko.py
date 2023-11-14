@@ -40,6 +40,7 @@ def main():
     userIn = int(input("User 1 or 2: "))
     user = validateUser(userIn)
     csvMinutes = '/Users/{}/Downloads/DARKO.csv'.format(user)
+    # in addition to minutes, use pace to calculate how many possessions each player will contribute per game
     csvPlayer = '/Users/{}/Downloads/DARKOPLAYER.csv'.format(user)
     seasonCSV = '/Users/{}/Downloads/sportsref_download_november.csv'.format(user)
     minutesDF = pd.read_csv(csvMinutes)
@@ -113,12 +114,13 @@ def getTeamDPMS(dpmDict, minDict):
 
         dpmTeam = dpmDict[team]
         for playerData in dpmTeam:
-            ## takes the minutes for a player from the player-minute dictionary and divieds by total gametime for playable time weight:
+            ## takes the minutes for a player from the player-minute dictionary and divides by total gametime for playable time weight:
             playerMinuteWeight = (minDict[playerData[0]][0]/48)
             ## ODPM is valued higher than DDPM at a 1.5:1 ratio
-            ODPM = teamsDict[team][0] + ((playerData[1][1][0] * playerMinuteWeight) * 1.5)
-            DDPM = teamsDict[team][1] + (playerData[1][1][1] * playerMinuteWeight)
-            teamsDict[team] = (ODPM, DDPM)
+            ODPM = teamsDict[team][0] + ((playerData[1][1][0] * playerMinuteWeight) * 0.8)
+            DDPM = teamsDict[team][1] + (playerData[1][1][1] * playerMinuteWeight * 0.8)
+            # multiply by 0.8 to account for diminishing returns between individual player talent and on-court team talent
+            teamsDict[team] = (ODPM , DDPM)
     return teamsDict
 
 def weeklyMatchup(dateToReturn, seasonList):
