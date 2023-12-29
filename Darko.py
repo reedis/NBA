@@ -22,52 +22,82 @@ import math
 ######################## LINKS ############################
 # schedule link = https://www.basketball-reference.com/leagues/NBA_2024_games-november.html
 # DPM/Min link = https://apanalytics.shinyapps.io/DARKO/
+# Injury link = https://www.rotowire.com/basketball/injury-report.php
 ###########################################################
 
 ################ NAMING CONVENTIONS ######################
 # Minutes (Daily Player Per-Game Projections): DARKO.csv
 # Player (Current Player Skill Projections): DARKOPLAYER.csv
 # Schedule: sportsref_download_CURRENTMONTH.csv -- CURRENTMONTH SHOULD BE LOWER CASE
-
+# Injury: nba-injury-report.csv
 alpha=15
 
-seasonCSV = "sportsref_download.xls"
+teamNamesConversionDict = {'ATL': 'Atlanta Hawks', 'BKN': 'Brooklyn Nets', 'BOS': 'Boston Celtics', 'CLE': 'Cleveland Cavaliers', 'CHA': 'Charlotte Hornets', 
+                           'CHI': 'Chicago Bulls', 'PHI': 'Philadelphia 76ers', 'MIA': 'Miami Heat', 'ORL': 'Orlando Magic', 'NYK': 'New York Knicks', 'TOR': 'Toronto Raptors',
+                           'WAS': 'Washington Wizards', 'DET': 'Detroit Pistons', 'NOP': 'New Orleans Pelicans', 'MIN': 'Minnesota Timberwolves', 'DEN': 'Denver Nuggets', 
+                           'OKC': 'Oklahoma City Thunder', 'LAC': 'Los Angeles Clippers', 'LAL': 'Los Angeles Lakers', 'SAC':'Sacramento Kings', 'DAL': 'Dallas Mavericks', 
+                           'HOU':'Houston Rockets', 'PHX':'Phoenix Suns', 'GSW':'Golden State Warriors', 'UTA':'Utah Jazz', 'POR': 'Portland Trail Blazers', 'SAS': 'San Antonio Spurs', 
+                           'IND': 'Indiana Pacers', 'MEM': 'Memphis Grizzlies', 'MIL': 'Milwaukee Bucks'}
+
 def validateUser(userNumber):
     if userNumber == 1:
-        return sam
+        return "samgoshen"
     elif userNumber == 2:
-        return isaac
+        return "isaacreed"
     else:
         return ""
     
-isaac = "isaacreed"
-sam = "samgoshen"
+def getFiles(user, month):
+    # Player minutes and pace
+    csvMinutes = '/Users/{}/Downloads/DARKO.csv'.format(user)
+    minutesDF = pd.read_csv(csvMinutes)
+    minutesDF.drop(inplace=True, labels=["PTS", "AST","DREB","OREB","BLK","STL","TOV","FGA","FTA","FG3A","RimFGA", "PF", "date_of_projection", "Experience"], axis=1)
+    minutesDF.set_index("Team", inplace=True)
+    # Player Darko evals
+    csvPlayer = '/Users/{}/Downloads/DARKOPLAYER.csv'.format(user)
+    playerDf = pd.read_csv(csvPlayer)
+    playerDf = playerDf[["Team", "Player","DPM","O-DPM","D-DPM"]]
+    playerDf.set_index("Team", inplace=True)
+    # season Schedule
+    seasonCSV = '/Users/{}/Downloads/sportsref_download_{}.csv'.format(user, month.lower())
+    seasonList = pd.read_csv(seasonCSV)
+    seasonList = seasonList.drop(["Start (ET)", "PTS", "PTS.1", "Unnamed: 6", "Unnamed: 7", "Attend.", "Arena", "Notes"], axis=1)
+    seasonList.set_index("Date", inplace=True)
+    # Injurues
+    injuriesCSV = '/Users/{}/Downloads/nba-injury-report.csv'.format(user)
+    injuryList = pd.read_csv(injuriesCSV)
+    injuryList.drop(inplace=True, labels=["Pos", "Est. Return","Injury"], axis=1)
+    injuryList.set_index("Player", inplace=True)
+    cleanedInjuryList = cleanInjuryList(injuryList)
+    print(cleanedInjuryList)
+    qList = cleanedInjuryList[cleanedInjuryList['Status'] == 'Game Time Decision']
+    outList = cleanedInjuryList[cleanedInjuryList['Status'] != 'Game Time Decision']
+    return minutesDF, playerDf, seasonList, outList, qList
+    
+def cleanInjuryList(injuryList):
+    for index, row in injuryList.iterrows():
+        row['Team'] = teamNamesConversionDict[row['Team']]
+
+    return injuryList
+
+
+
 debug = False
 def main():
     userIn = int(input("User 1 or 2: "))
     user = validateUser(userIn)
-    csvMinutes = '/Users/{}/Downloads/DARKO.csv'.format(user)
-    # in addition to minutes, use pace to calculate how many possessions each player will contribute per game
-    csvPlayer = '/Users/{}/Downloads/DARKOPLAYER.csv'.format(user)
-    seasonCSV = '/Users/{}/Downloads/sportsref_download_november.csv'.format(user)
-    minutesDF = pd.read_csv(csvMinutes)
-    minutesDF.drop(inplace=True, labels=["PTS", "AST","DREB","OREB","BLK","STL","TOV","FGA","FTA","FG3A","RimFGA", "PF", "date_of_projection", "Experience"], axis=1)
-    minutesDF.set_index("Team", inplace=True)
-    teamPlayerMinutes = minutesPerPlayer(minutesDF)
-    playerDf = pd.read_csv(csvPlayer)
-    playerDf = playerDf[["Team", "Player","DPM","O-DPM","D-DPM"]]
-    playerDf.set_index("Team", inplace=True)
-    teamPlayerDPM = dpmPerPlayer(playerDf)
+    month = input("Month: ")
+    minutesDF, playerDF, seasonList, oList, qList = getFiles(user, month)
+    teamPlayerMinutes, outMin, qMin = minutesPerPlayer(minutesDF, oList, qList)
+    teamPlayerDPM = dpmPerPlayer(playerDF)
     avgODPM, avgDDPM, teamDPM = getTeamDPMs(teamPlayerDPM, teamPlayerMinutes)
     if(debug):
         print(healthCheck(avgODPM, avgDDPM, teamDPM))
-    seasonList = pd.read_csv(seasonCSV)
-    seasonList = seasonList.drop(["Start (ET)", "PTS", "PTS.1", "Unnamed: 6", "Unnamed: 7", "Attend.", "Arena", "Notes"], axis=1)
-    seasonList.set_index("Date", inplace=True)
+   
     teamPairings = weeklyMatchup(str(datetime.date.today()), seasonList)
-    buildAnalytics(teamPairings, avgODPM, avgDDPM, teamDPM)
+    buildAnalytics(teamPairings, avgODPM, avgDDPM, teamDPM, outMin, qMin)
     
-def buildAnalytics(teamPairings, avgODPM, avgDDPM, teamDPM):
+def buildAnalytics(teamPairings, avgODPM, avgDDPM, teamDPM, outMin, qMin):
     evaluatedDict = {}
     for home, away in teamPairings:
         homeStrength = pythagExpect(teamDPM[home][0], teamDPM[home][1], avgODPM, avgDDPM)
@@ -76,7 +106,9 @@ def buildAnalytics(teamPairings, avgODPM, avgDDPM, teamDPM):
         awayElo = elo(awayStrength)
         homeWin = homeWinChance(homeElo, awayElo)
         print('{}, {}'.format(home, away))
-        print('Home win % chance: {}'.format(homeWin*100))
+        print('Home ({}) win % chance: {}'.format(home, homeWin*100))
+        print("{} OUT-Injury minutes: {}, Q-Injury minutes: {}".format(home, outMin[home], qMin[home]))
+        print("{} OUT-Injury minutes: {}, Q-Injury minutes: {}".format(away, outMin[away], qMin[away]))
         print(buildROI(homeWin))
         print('----------')
         
@@ -113,12 +145,31 @@ def buildROI(homeP):
     else:
         return ((alpha + ((1 - homeP)*100))/(homeP), ((1-homeP)*10000)/((1-homeP)*100 - 100 - alpha))
 
-def minutesPerPlayer(frame):
+def minutesPerPlayer(frame, outList, questionableList):
     teamsDict = {}
+    teamOUTInjuryTime = {'Atlanta Hawks': 0,'Boston Celtics': 0,'Brooklyn Nets': 0,'Charlotte Hornets':0,'Chicago Bulls':0,'Cleveland Cavaliers':0,'Dallas Mavericks':0,
+                      'Denver Nuggets':0,'Detroit Pistons':0,'Golden State Warriors':0,'Houston Rockets':0,'Indiana Pacers':0,'Los Angeles Clippers':0,'Los Angeles Lakers':0,
+                      'Memphis Grizzlies':0,'Miami Heat':0,'Milwaukee Bucks':0,'Minnesota Timberwolves':0,'New Orleans Pelicans':0,'New York Knicks':0,
+                      'Oklahoma City Thunder':0,'Orlando Magic':0,'Philadelphia 76ers':0,'Phoenix Suns':0,'Portland Trail Blazers':0,'Sacramento Kings':0,
+                      'San Antonio Spurs':0,'Toronto Raptors':0,'Utah Jazz':0,'Washington Wizards':0}
+    teamQUESTIONABLEInjuryTime = {'Atlanta Hawks': 0,'Boston Celtics': 0,'Brooklyn Nets': 0,'Charlotte Hornets':0,'Chicago Bulls':0,'Cleveland Cavaliers':0,'Dallas Mavericks':0,
+                      'Denver Nuggets':0,'Detroit Pistons':0,'Golden State Warriors':0,'Houston Rockets':0,'Indiana Pacers':0,'Los Angeles Clippers':0,'Los Angeles Lakers':0,
+                      'Memphis Grizzlies':0,'Miami Heat':0,'Milwaukee Bucks':0,'Minnesota Timberwolves':0,'New Orleans Pelicans':0,'New York Knicks':0,
+                      'Oklahoma City Thunder':0,'Orlando Magic':0,'Philadelphia 76ers':0,'Phoenix Suns':0,'Portland Trail Blazers':0,'Sacramento Kings':0,
+                      'San Antonio Spurs':0,'Toronto Raptors':0,'Utah Jazz':0,'Washington Wizards':0} 
     for index, row in frame.iterrows():
-        teamsDict[row['Player']] = (row['Minutes'], row['Pace'])
+        if row['Player'] in outList.index:
+            teamsDict[row['Player']] = (0, row['Pace'])
+            injuredPlayerDf = outList.loc[row['Player']]
+            teamOUTInjuryTime[injuredPlayerDf['Team']] += row['Minutes']
+        if row['Player'] in questionableList.index:
+            teamsDict[row['Player']] = (row['Minutes']/2, row['Pace'])
+            injuredPlayerDf = questionableList.loc[row['Player']]
+            teamQUESTIONABLEInjuryTime[injuredPlayerDf['Team']] += (row['Minutes']/2)
+        else:
+            teamsDict[row['Player']] = (row['Minutes'], row['Pace'])
 
-    return teamsDict
+    return teamsDict, teamOUTInjuryTime, teamQUESTIONABLEInjuryTime
 
 def dpmPerPlayer(frame):
     teamsDict = {}
@@ -155,7 +206,7 @@ def getTeamDPMs(dpmDict, minDict):
             sumTotalDDPM += (playerData[1][1][1] * playerMinuteWeight * paceWeight * 0.8)
             sumTotalODPM += (playerData[1][1][0] * playerMinuteWeight * paceWeight * 0.8)
             # multiply by 0.8 to account for diminishing returns between individual player talent and on-court team talent
-            teamsDict[team] = (ODPM , DDPM)
+            teamsDict[team] = (ODPM, DDPM)
 
     return (sumTotalODPM/teamsInLeauge), (sumTotalDDPM/teamsInLeauge), teamsDict
 
@@ -202,4 +253,3 @@ def getNumericalMonth(date):
         return 12
 
 main()
-
