@@ -69,7 +69,6 @@ def getFiles(user, month):
     injuryList.drop(inplace=True, labels=["Pos", "Est. Return","Injury"], axis=1)
     injuryList.set_index("Player", inplace=True)
     cleanedInjuryList = cleanInjuryList(injuryList)
-    print(cleanedInjuryList)
     qList = cleanedInjuryList[cleanedInjuryList['Status'] == 'Game Time Decision']
     outList = cleanedInjuryList[cleanedInjuryList['Status'] != 'Game Time Decision']
     return minutesDF, playerDf, seasonList, outList, qList
@@ -80,7 +79,7 @@ def cleanInjuryList(injuryList):
 
     return injuryList
 
-
+ 
 
 debug = False
 def main():
