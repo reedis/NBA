@@ -1,6 +1,6 @@
 import pandas as pd
 import datetime
-import math
+import math 
 
 ##-------------------------------------------------------##
 #                 Dictionary Structures:                  #
@@ -50,9 +50,6 @@ def validateUser(userNumber):
 def getFiles(user, month):
     # Player minutes and pace
     csvMinutes = '/Users/{}/Downloads/DARKO.csv'.format(user)
-    # in addition to minutes, use pace to calculate how many possessions each player will contribute per game
-    csvPlayer = '/Users/{}/Downloads/DARKOPLAYER.csv'.format(user)
-    seasonCSV = '/Users/{}/Downloads/sportsref_download_november.csv'.format(user)
     minutesDF = pd.read_csv(csvMinutes)
     minutesDF.drop(inplace=True, labels=["PTS", "AST","DREB","OREB","BLK","STL","TOV","FGA","FTA","FG3A","RimFGA", "PF", "date_of_projection", "Experience"], axis=1)
     minutesDF.set_index("Team", inplace=True)
