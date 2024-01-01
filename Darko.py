@@ -1,8 +1,10 @@
 import pandas as pd
 import datetime
 import math
-
+import NBA
 import Player
+from Utils import validateUser, generate_season
+
 
 ##-------------------------------------------------------##
 #                 Dictionary Structures:                  #
@@ -33,73 +35,7 @@ import Player
 # Schedule: sportsref_download_CURRENTMONTH.csv -- CURRENTMONTH SHOULD BE LOWER CASE
 # Injury: nba-injury-report.csv
 alpha = 15
-
-teamNamesConversionDict = {'ATL': 'Atlanta Hawks', 'BKN': 'Brooklyn Nets', 'BOS': 'Boston Celtics',
-                           'CLE': 'Cleveland Cavaliers', 'CHA': 'Charlotte Hornets',
-                           'CHI': 'Chicago Bulls', 'PHI': 'Philadelphia 76ers', 'MIA': 'Miami Heat',
-                           'ORL': 'Orlando Magic', 'NYK': 'New York Knicks', 'TOR': 'Toronto Raptors',
-                           'WAS': 'Washington Wizards', 'DET': 'Detroit Pistons', 'NOP': 'New Orleans Pelicans',
-                           'MIN': 'Minnesota Timberwolves', 'DEN': 'Denver Nuggets',
-                           'OKC': 'Oklahoma City Thunder', 'LAC': 'Los Angeles Clippers', 'LAL': 'Los Angeles Lakers',
-                           'SAC': 'Sacramento Kings', 'DAL': 'Dallas Mavericks',
-                           'HOU': 'Houston Rockets', 'PHX': 'Phoenix Suns', 'GSW': 'Golden State Warriors',
-                           'UTA': 'Utah Jazz', 'POR': 'Portland Trail Blazers', 'SAS': 'San Antonio Spurs',
-                           'IND': 'Indiana Pacers', 'MEM': 'Memphis Grizzlies', 'MIL': 'Milwaukee Bucks'}
-
-
-def validateUser(userNumber):
-    if userNumber == 1:
-        return "samgoshen"
-    elif userNumber == 2:
-        return "isaacreed"
-    else:
-        return ""
-
-
-def getFiles(user, month):
-    # Player minutes and pace
-    csvMinutes = '/Users/{}/Downloads/DARKO.csv'.format(user)
-    minutesDF = pd.read_csv(csvMinutes)
-    minutesDF.drop(inplace=True,
-                   labels=["PTS", "AST", "DREB", "OREB", "BLK", "STL", "TOV", "FGA", "FTA", "FG3A", "RimFGA", "PF",
-                           "date_of_projection", "Experience"], axis=1)
-    minutesDF.set_index("Team", inplace=True)
-    # Player Darko evals
-    csvPlayer = '/Users/{}/Downloads/DARKOPLAYER.csv'.format(user)
-    playerDf = pd.read_csv(csvPlayer)
-    playerDf = playerDf[["Team", "Player", "DPM", "O-DPM", "D-DPM"]]
-    playerDf.set_index("Team", inplace=True)
-    # season Schedule
-    seasonCSV = '/Users/{}/Downloads/sportsref_download_{}.csv'.format(user, month.lower())
-    seasonList = pd.read_csv(seasonCSV)
-    seasonList = seasonList.drop(
-        ["Start (ET)", "PTS", "PTS.1", "Unnamed: 6", "Unnamed: 7", "Attend.", "Arena", "Notes"], axis=1)
-    seasonList.set_index("Date", inplace=True)
-    # Injurues
-    injuriesCSV = '/Users/{}/Downloads/nba-injury-report.csv'.format(user)
-    injuryList = pd.read_csv(injuriesCSV)
-    injuryList.drop(inplace=True, labels=["Pos", "Est. Return", "Injury"], axis=1)
-    injuryList.set_index("Player", inplace=True)
-    qList, oList = cleanInjuryList(injuryList)
-    return minutesDF, playerDf, seasonList, oList, qList
-
-
-def cleanInjuryList(injuryList):
-    questionablePlayers = []
-    outPlayers = []
-    injuryList['Team'] = injuryList['Team'].apply(lambda name: teamNamesConversionDict[name])
-    qList = injuryList[injuryList['Status'] == 'Game Time Decision']
-    outList = injuryList[injuryList['Status'] != 'Game Time Decision']
-    for index, player in qList.iterrows():
-        questionablePlayers.append(Player.InjuredPlayer(player['Name'], player['Team'], player['Status']))
-
-    for index, player in outList.iterrows():
-        outPlayers.append(Player.InjuredPlayer(player['Name'], player['Team'], player['Status']))
-
-    return questionablePlayers, outPlayers
-
 # this is a test push
-
 debug = False
 
 
@@ -107,9 +43,9 @@ def main():
     userIn = int(input("User 1 or 2: "))
     user = validateUser(userIn)
     month = input("Month: ")
-    minutesDF, playerDF, seasonList, oList, qList = getFiles(user, month)
-    teamPlayerMinutes, outMin, qMin = minutesPerPlayer(minutesDF, oList, qList)
-    teamPlayerDPM = dpmPerPlayer(playerDF)
+    season = generate_season(user, month)
+    ## todo
+    minutesPerPlayer(season)
     avgODPM, avgDDPM, teamDPM = getTeamDPMs(teamPlayerDPM, teamPlayerMinutes)
     if (debug):
         print(healthCheck(avgODPM, avgDDPM, teamDPM))

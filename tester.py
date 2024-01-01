@@ -1,5 +1,6 @@
 import Player
 import Teams
+import NBA
 
 player1 = Player.Player("player1", "team1", 30, 5, 0, 0, 0, 2)
 player2 = Player.Player("player2", "team1", 25, 8, 15, 8, 0, 0)
@@ -11,6 +12,7 @@ pList1 = [player5, player4, player3, player1, player2]
 pList2 = [player1, player2]
 team1 = Teams.Team(pList1, "team")
 team2 = Teams.Team(pList2, "team")
+
 for pos in team1.roster:
     print(pos)
     for player in team1.roster[pos]:
@@ -25,3 +27,6 @@ for pos in team1.roster:
     for player in team1.roster[pos]:
         print("{},{}".format(player.name, player.positions[pos]))
     print("________")
+
+testString = "Fri, Dec 1, 2023"
+print(NBA.makeDate(testString))

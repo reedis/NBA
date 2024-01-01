@@ -1,31 +1,34 @@
 from enum import Enum
 
 
-def populate_positions_dict(pgMin, sgMin, sfMin, pfMin, cMin):
-    returnDict = {Positions.PointGaurd: 0, Positions.ShootingGaurd: 0, Positions.SmallForward: 0,
-                  Positions.PowerForward: 0, Positions.Center: 0}
-    if pgMin != 0:
-        returnDict[Positions.PointGaurd] = pgMin
-    if sgMin != 0:
-        returnDict[Positions.ShootingGaurd] = sgMin
-    if sfMin != 0:
-        returnDict[Positions.SmallForward] = sfMin
-    if pfMin != 0:
-        returnDict[Positions.PowerForward] = pfMin
-    if cMin != 0:
-        returnDict[Positions.Center] = cMin
-    return returnDict
-
-
 class Player:
-    def __init__(self, name, team, pgMin, sgMin, sfMin, pfMin, cMin, pace, isInjured=False, injuryStatus=None):
+    def __init__(self, name, team, totalMins, pace):
         self.name = name
         self.team = team
-        self.positions = populate_positions_dict(pgMin, sgMin, sfMin, pfMin, cMin)
+        self.totalMins = totalMins
+        self.positions = {Positions.PointGaurd: 0, Positions.ShootingGaurd: 0, Positions.SmallForward: 0,
+                          Positions.PowerForward: 0, Positions.Center: 0}
         self.pace = pace
-        self.totalMin = self.summation_of_minutes()
-        self.isInjured = isInjured
-        self.injuryStatus = injuryStatus
+        self.dpm = None
+        self.odpm = None
+        self.ddpm = None
+
+    def populate_positions(self, pgMin, sgMin, sfMin, pfMin, cMin):
+        if pgMin != 0:
+            self.positions[Positions.PointGaurd] = pgMin
+        if sgMin != 0:
+            self.positions[Positions.ShootingGaurd] = sgMin
+        if sfMin != 0:
+            self.positions[Positions.SmallForward] = sfMin
+        if pfMin != 0:
+            self.positions[Positions.PowerForward] = pfMin
+        if cMin != 0:
+            self.positions[Positions.Center] = cMin
+
+    def populate_dpms(self, dpm, odpm, ddpm):
+        self.dpm = dpm
+        self.odpm = odpm
+        self.ddpm = ddpm
 
     def summation_of_minutes(self):
         minSum = 0

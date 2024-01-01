@@ -2,9 +2,9 @@ from Player import Player
 from Player import Positions
 
 
-class NBA:
-    def __init__(self, teams):
-        self.teams = teams
+
+
+
 
 
 class Team:
@@ -16,6 +16,7 @@ class Team:
                        Positions.PowerForward: [],
                        Positions.Center: []}
         self.populate_roster(playersList)
+        self.injuryMinutes = 0
 
     def populate_roster(self, playerList):
         for player in playerList:
@@ -48,6 +49,7 @@ class Team:
             for position in outPlayer.positions:
                 if outPlayer.positions[position] != 0:
                     minsDict[position] += outPlayer.positions[position]
+                    self.injuryMinutes += outPlayer.positions[position]
                     outPlayer.positions[position] = 0
 
             for position in self.roster:
@@ -62,6 +64,7 @@ class Team:
             for position in questionablePlayer.positions:
                 if questionablePlayer.positions[position] != 0:
                     minsDict[position] += (questionablePlayer.positions[position] / 2)
+                    self.injuryMinutes += (questionablePlayer.positions[position] / 2)
                     editedPlayer.positions[position] = (questionablePlayer.positions[position] / 2)
 
             for position in self.roster:
