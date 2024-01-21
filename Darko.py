@@ -1,10 +1,7 @@
 import pandas as pd
-import datetime
+from datetime import date
 import math
-import NBA
-import Player
-from Utils import validateUser, generate_season
-
+from Utils import validateUser, generate_season, monthToDate
 
 ##-------------------------------------------------------##
 #                 Dictionary Structures:                  #
@@ -27,6 +24,7 @@ from Utils import validateUser, generate_season
 # schedule link = https://www.basketball-reference.com/leagues/NBA_2024_games-december.html
 # DPM/Min link = https://apanalytics.shinyapps.io/DARKO/
 # Injury link = https://www.rotowire.com/basketball/injury-report.php
+# ***SORT BY MINUTES BEFORE DOWNLOADING*** Player Position link = https://www.basketball-reference.com/leagues/NBA_2024_play-by-play.html#pbp_stats
 ###########################################################
 
 ################ NAMING CONVENTIONS ######################
@@ -34,6 +32,9 @@ from Utils import validateUser, generate_season
 # Player (Current Player Skill Projections): DARKOPLAYER.csv
 # Schedule: sportsref_download_CURRENTMONTH.csv -- CURRENTMONTH SHOULD BE LOWER CASE
 # Injury: nba-injury-report.csv
+# Position: sportsref_position.csv
+
+
 alpha = 15
 # this is a test push
 debug = False
@@ -44,46 +45,36 @@ def main():
     user = validateUser(userIn)
     month = input("Month: ")
     season = generate_season(user, month)
-    ## todo
-    minutesPerPlayer(season)
-    avgODPM, avgDDPM, teamDPM = getTeamDPMs(teamPlayerDPM, teamPlayerMinutes)
     if (debug):
-        print(healthCheck(avgODPM, avgDDPM, teamDPM))
-    teamPairings = weeklyMatchup(str(datetime.date.today()), seasonList)
-    buildAnalytics(teamPairings, avgODPM, avgDDPM, teamDPM, outMin, qMin)
+        healthCheck(season)
+
+    buildAnalytics(season)
 
 
-def buildAnalytics(teamPairings, avgODPM, avgDDPM, teamDPM, outMin, qMin):
-    evaluatedDict = {}
-    for home, away in teamPairings:
-        homeStrength = pythagExpect(teamDPM[home][0], teamDPM[home][1], avgODPM, avgDDPM)
-        homeElo = elo(homeStrength) + 70
-        awayStrength = pythagExpect(teamDPM[away][0], teamDPM[away][1], avgODPM, avgDDPM)
-        awayElo = elo(awayStrength)
-        homeWin = homeWinChance(homeElo, awayElo)
-        print('{}, {}'.format(home, away))
-        print('Home ({}) win % chance: {}'.format(home, homeWin * 100))
-        print("{} OUT-Injury minutes: {}, Q-Injury minutes: {}".format(home, outMin[home], qMin[home]))
-        print("{} OUT-Injury minutes: {}, Q-Injury minutes: {}".format(away, outMin[away], qMin[away]))
-        print(buildROI(homeWin))
-        print('----------')
+def buildAnalytics(season):
+    today = date.today().strftime("%m-%d-%Y")
+    for day in season.schedule:
+        if day.strip() == today.strip():
+            todayGames = season.schedule[day]
+            for game in todayGames:
+                homeStrength = pythagExpect(teamDDPM=game.home.ddpm, teamODPM=game.home.odpm, season=season)
+                homeElo = elo(homeStrength) + 70
+                awayStrength = pythagExpect(teamDDPM=game.away.ddpm, teamODPM=game.away.ddpm, season=season)
+                awayElo = elo(awayStrength)
+                homeWin = homeWinChance(homeElo, awayElo)
+                print('{}, {}'.format(game.home.name, game.away.name))
+                print('Home ({}) win % chance: {}'.format(game.home.name, homeWin * 100))
+                print("{} OUT-Injury minutes: {}, Q-Injury minutes: {}".format(game.home.name, game.home.outMin, game.home.questionableMin))
+                print("{} OUT-Injury minutes: {}, Q-Injury minutes: {}".format(game.away.name, game.away.outMin, game.away.questionableMin))
+                print(buildROI(homeWin))
+                print('----------')
+    return
 
-    evalDf = pd.DataFrame(
-        columns=["Home", "Away", "Eval", "Home ROI (HF)", "Away ROI (HF)", "Home ROI (AF)", "Away ROI (AF)"])
-    i = 0
-    for key, value in evaluatedDict.items():
-        evalDf.loc[i] = [key[0]] + [key[1]] + [value[0]] + [value[1][0][0]] + [value[1][0][1]] + [value[1][1][0]] + [
-            value[1][1][1]]
-        i += 1
-    return evalDf
-
-
-def healthCheck(avgOdpm, avgDDpm, teams):
-    sumTotal = 0
-    for team in teams.keys():
-        sumTotal += (pythagExpect(teams[team][0], teams[team][1], avgOdpm, avgDDpm) * 82)
-
-    return sumTotal / 30
+def healthCheck(season):
+    for team in season.teams:
+        print("Team: {} ODPM: {}, DDPM: {}\n Players: ".format(team.name, team.odpm, team.ddpm))
+        for player in team.playerList:
+            print("     {}: Total minutes: {}, injured: {}".format(player.name, player.totalMins, player.injury_status))
 
 
 def elo(score):
@@ -91,9 +82,9 @@ def elo(score):
 
 
 # Projected Team win % for season -- NOT MATCHUP
-def pythagExpect(teamODPM, teamDDPM, avgODPM, avgDDPM):
-    var1 = ((100 + teamODPM) - (100 + avgDDPM) + 100) ** 14.3
-    var2 = ((100 - teamDDPM) + (100 + avgODPM) - 100) ** 14.3
+def pythagExpect(teamODPM, teamDDPM, season):
+    var1 = ((100 + teamODPM) - (100 + season.avgOdpm) + 100) ** 14.3
+    var2 = ((100 - teamDDPM) + (100 + season.avgDdpm) - 100) ** 14.3
     return (var1 / (var1 + var2))
 
 
@@ -102,10 +93,10 @@ def homeWinChance(homeElo, awayElo):
 
 
 def buildROI(homeP):
-    if (homeP > .5):
-        return ((homeP * 10000) / (homeP * 100 - 100 - alpha), (alpha + (homeP * 100)) / (1 - homeP))
+    if homeP > .5:
+        return (homeP * 10000) / (homeP * 100 - 100 - alpha), (alpha + (homeP * 100)) / (1 - homeP)
     else:
-        return ((alpha + ((1 - homeP) * 100)) / (homeP), ((1 - homeP) * 10000) / ((1 - homeP) * 100 - 100 - alpha))
+        return (alpha + ((1 - homeP) * 100)) / (homeP), ((1 - homeP) * 10000) / ((1 - homeP) * 100 - 100 - alpha)
 
 
 def minutesPerPlayer(frame, outList, questionableList):
@@ -197,36 +188,9 @@ def weeklyMatchup(dateToReturn, seasonList):
 def getFormattedTime(index):
     splitIndex = index.split(', ')
     day = splitIndex[1][4:]
-    month = getNumericalMonth(splitIndex[1][:3])
+    month = int(monthToDate(splitIndex[1][:3]))
     year = splitIndex[2]
     return str(datetime.date(int(year), int(month), int(day)))
-
-
-def getNumericalMonth(date):
-    if (date == "Jan"):
-        return 1
-    elif (date == "Feb"):
-        return 2
-    elif (date == "Mar"):
-        return 3
-    elif (date == "Apr"):
-        return 4
-    elif (date == "May"):
-        return 5
-    elif (date == "Jun"):
-        return 6
-    elif (date == "Jul"):
-        return 7
-    elif (date == "Aug"):
-        return 8
-    elif (date == "Sep"):
-        return 9
-    elif (date == "Oct"):
-        return 10
-    elif (date == "Nov"):
-        return 11
-    elif (date == "Dec"):
-        return 12
 
 
 main()

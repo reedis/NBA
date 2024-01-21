@@ -12,6 +12,8 @@ class Player:
         self.dpm = None
         self.odpm = None
         self.ddpm = None
+        self.injury_bank = None
+        self.injury_status = False
 
     def populate_positions(self, pgMin, sgMin, sfMin, pfMin, cMin):
         if pgMin != 0:
@@ -25,10 +27,14 @@ class Player:
         if cMin != 0:
             self.positions[Positions.Center] = cMin
 
+        self.injury_bank = self.positions
+        return self
+
     def populate_dpms(self, dpm, odpm, ddpm):
         self.dpm = dpm
         self.odpm = odpm
         self.ddpm = ddpm
+        return self
 
     def summation_of_minutes(self):
         minSum = 0
@@ -36,6 +42,13 @@ class Player:
             minSum += self.positions[position]
 
         return minSum
+
+    def set_team(self, team):
+        self.team = team
+
+    def update_injury(self, update):
+        self.positions = self.injury_bank
+        self.team.update_injury(self)
 
 
 class InjuredPlayer:
