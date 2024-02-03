@@ -51,7 +51,14 @@ class Player:
 
     def print_player(self):
         first_string = "{}, total minutes: {}".format(self.name, self.totalMins)
-
+        pos_string = ""
+        for position in self.positions:
+            temp_string = "{}: {} mins\n".format(position.name, self.positions[position])
+            pos_string += temp_string
+        pos_string = pos_string.strip()
+        print(first_string)
+        print(pos_string.strip())
+        print('--------')
 
 class InjuredPlayer:
     def __init__(self, name, team, status):

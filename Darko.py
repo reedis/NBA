@@ -37,7 +37,7 @@ from Utils import validateUser, generate_season, monthToDate
 
 alpha = 15
 # this is a test push
-debug = False
+debug = True
 
 
 def main():
@@ -47,8 +47,8 @@ def main():
     season = generate_season(user, month)
     if (debug):
         healthCheck(season)
-
-    buildAnalytics(season)
+    else:
+        buildAnalytics(season)
 
 
 def buildAnalytics(season):
@@ -74,10 +74,10 @@ def buildAnalytics(season):
 
 def healthCheck(season):
     for team in season.teams:
-        print("Team: {} ODPM: {}, DDPM: {}\n Players: ".format(team.name, team.odpm, team.ddpm))
+        print("Team: {} ODPM: {}, DDPM: {}, total minutes: {}\n Players: ".format(team.name, team.odpm, team.ddpm, team.totalPlayerMinutes))
         for player in team.playerList:
             print("     {}: Total minutes: {}, injured: {}".format(player.name, player.totalMins, player.injury_status))
-
+        team.print_player_minutes()
 
 def elo(score):
     return (1504.6 - (450 * (math.log10((1 / score) - 1))))

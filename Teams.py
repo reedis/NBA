@@ -155,4 +155,5 @@ class Team:
 
     def print_player_minutes(self):
         for player in self.playerList:
-            print(player.print_player())
+            player.print_player()
+        print('========================')
