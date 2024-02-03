@@ -13,8 +13,8 @@ class NBA:
         gamesByDate = {}
         for index, game in schedule.iterrows():
             date = makeDate(index)
-            home = self.get_team(game['Visitor/Neutral'])
-            away = self.get_team(game['Home/Neutral'])
+            away = self.get_team(game['Visitor/Neutral'])
+            home = self.get_team(game['Home/Neutral'])
             newGame = Game(date, home, away)
             if date not in gamesByDate:
                 gamesByDate[date] = [newGame]

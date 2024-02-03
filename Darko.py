@@ -65,7 +65,9 @@ def buildAnalytics(season):
                 print('{}, {}'.format(game.home.name, game.away.name))
                 print('Home ({}) win % chance: {}'.format(game.home.name, homeWin * 100))
                 print("{} OUT-Injury minutes: {}, Q-Injury minutes: {}".format(game.home.name, game.home.outMin, game.home.questionableMin))
+                print("{} total team minutes: {}, total-adjusted minutes {}".format(game.home.name, game.home.totalPlayerMinutes, game.home.sum_minutes()))
                 print("{} OUT-Injury minutes: {}, Q-Injury minutes: {}".format(game.away.name, game.away.outMin, game.away.questionableMin))
+                print("{} total team minutes: {}, total-adjusted minutes {}".format(game.away.name, game.away.totalPlayerMinutes, game.away.sum_minutes()))
                 print(buildROI(homeWin))
                 print('----------')
     return
@@ -190,7 +192,7 @@ def getFormattedTime(index):
     day = splitIndex[1][4:]
     month = int(monthToDate(splitIndex[1][:3]))
     year = splitIndex[2]
-    return str(datetime.date(int(year), int(month), int(day)))
+    return str(date(int(year), int(month), int(day)))
 
 
 main()

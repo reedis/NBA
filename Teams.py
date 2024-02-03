@@ -13,6 +13,7 @@ class Team:
         self.injuryMinutes = {}
         self.outMin = 0
         self.questionableMin = 0
+        self.totalPlayerMinutes = 0
         self.playerList = playersList
         self.odpm = 0
         self.ddpm = 0
@@ -27,6 +28,7 @@ class Team:
             self.odpm += player.odpm
             self.ddpm += player.ddpm
             for position in player.positions:
+                self.totalPlayerMinutes += player.positions[position]
                 self.roster[position].append(player)
 
     def avgOdpm(self):
@@ -43,6 +45,7 @@ class Team:
         for pos in self.roster:
             for player in self.roster[pos]:
                 minutesSum += player.positions[pos]
+        return minutesSum
 
     def sort_roster(self):
         for position in self.roster:
@@ -131,10 +134,11 @@ class Team:
             minutesToAdd = minutesDict[position]
             while minutesToAdd > 0:
                 for player in self.roster[position]:
-                    if player.positions[position] < 30:
-                        minDiff = 30 - player.positions[position]
+                    if player.totalMins < 30:
+                        minDiff = 30 - player.totalMins
                         if minDiff <= minutesToAdd:
                             player.positions[position] += minDiff
+                            player.totalMins += minDiff
                             minutesToAdd -= minDiff
                         else:
                             player.positions[position] += minutesToAdd
@@ -148,3 +152,7 @@ class Team:
         self.sumInjuryMinutes -= self.injuryMinutes[player.name]
         self.injuryMinutes[player.name] = 0
         self.add_player(player)
+
+    def print_player_minutes(self):
+        for player in self.playerList:
+            print(player.print_player())

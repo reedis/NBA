@@ -6,8 +6,7 @@ class Player:
         self.name = name
         self.team = team
         self.totalMins = totalMins
-        self.positions = {Positions.PointGaurd: 0, Positions.ShootingGaurd: 0, Positions.SmallForward: 0,
-                          Positions.PowerForward: 0, Positions.Center: 0}
+        self.positions = {}
         self.pace = pace
         self.dpm = None
         self.odpm = None
@@ -49,6 +48,9 @@ class Player:
     def update_injury(self, update):
         self.positions = self.injury_bank
         self.team.update_injury(self)
+
+    def print_player(self):
+        first_string = "{}, total minutes: {}".format(self.name, self.totalMins)
 
 
 class InjuredPlayer:
