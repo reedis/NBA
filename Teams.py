@@ -29,9 +29,9 @@ class Team:
     def populate_roster(self, playerList):
         for player in playerList:
             self.playerCount += 1
-            self.dpm += player.dpm
-            self.odpm += player.odpm
-            self.ddpm += player.ddpm
+            self.dpm += player.dpm * player.timeWeight
+            self.odpm += player.odpm * player.timeWeight
+            self.ddpm += player.ddpm * player.timeWeight
             for position in player.positions:
                 self.totalPlayerMinutes += player.positions[position]
                 self.roster[position].append(player)
@@ -87,6 +87,9 @@ class Team:
             if outPlayer is None:
                 continue
             self.outList.append(outPlayer)
+            self.odpm -= outPlayer.odpm * outPlayer.timeWeight
+            self.ddpm -= outPlayer.ddpm * outPlayer.timeWeight
+            self.dpm -= outPlayer.dpm * outPlayer.timeWeight
             playerInjuryMin = 0
             for position in outPlayer.positions:
                 if outPlayer.positions[position] != 0:
@@ -112,6 +115,9 @@ class Team:
             if questionablePlayer is None:
                 continue
             self.questionableList.append(questionablePlayer)
+            self.odpm -= (questionablePlayer.odpm * questionablePlayer.timeWeight) / 2
+            self.ddpm -= (questionablePlayer.ddpm * questionablePlayer.timeWeight) / 2
+            self.dpm -= (questionablePlayer.dpm * questionablePlayer.timeWeight) / 2
             playerInjuryMin = 0
             editedPlayer = questionablePlayer
             for position in questionablePlayer.positions:

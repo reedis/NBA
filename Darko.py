@@ -38,7 +38,7 @@ from Utils import validateUser, generate_season, monthToDate
 alpha = 15
 # this is a test push
 debug = True
-testing = True
+testing = False
 
 
 def main():
@@ -69,20 +69,28 @@ def buildAnalytics(season, testDate):
                 homeWin = homeWinChance(homeElo, awayElo)
                 print('{}, {}'.format(game.home.name, game.away.name))
                 print('Home ({}) win % chance: {}'.format(game.home.name, homeWin * 100))
-                print("{} OUT-Injury minutes: {}, Q-Injury minutes: {}".format(game.home.name, game.home.outMin, game.home.questionableMin))
-                print("{} total team minutes: {}, total-adjusted minutes {}".format(game.home.name, game.home.totalPlayerMinutes, game.home.sum_minutes()))
-                print("{} OUT-Injury minutes: {}, Q-Injury minutes: {}".format(game.away.name, game.away.outMin, game.away.questionableMin))
-                print("{} total team minutes: {}, total-adjusted minutes {}".format(game.away.name, game.away.totalPlayerMinutes, game.away.sum_minutes()))
+                print("{} OUT-Injury minutes: {}, Q-Injury minutes: {}".format(game.home.name, game.home.outMin,
+                                                                               game.home.questionableMin))
+                print("{} total team minutes: {}, total-adjusted minutes {}".format(game.home.name,
+                                                                                    game.home.totalPlayerMinutes,
+                                                                                    game.home.sum_minutes()))
+                print("{} OUT-Injury minutes: {}, Q-Injury minutes: {}".format(game.away.name, game.away.outMin,
+                                                                               game.away.questionableMin))
+                print("{} total team minutes: {}, total-adjusted minutes {}".format(game.away.name,
+                                                                                    game.away.totalPlayerMinutes,
+                                                                                    game.away.sum_minutes()))
                 print(buildROI(homeWin))
                 print('----------')
     return
+
 
 def healthCheck(season):
     for team in season.teams:
         print("Team: {} ODPM: {}, DDPM: {}\n Players: ".format(team.name, team.odpm, team.ddpm))
         print(" Active Roster, total active minutes: {}".format(team.sum_active_minutes()))
         for player in team.playerList:
-            print("     {}: Total minutes: {}, ODPM: {}, DDPM: {},".format(player.name, player.totalMins, player.odpm, player.ddpm))
+            print("     {}: Total minutes: {}, ODPM: {}, DDPM: {},".format(player.name, player.totalMins, player.odpm,
+                                                                           player.ddpm))
         if len(team.questionableList) != 0:
             print(" Questionable Players, total questionable minutes: {}".format(team.sum_questionable_player_min()))
             for qPlayer in team.questionableList:
@@ -91,8 +99,9 @@ def healthCheck(season):
             print(" Out Players, total out minutes: {}".format(team.sum_out_player_min()))
             for oPlayer in team.outList:
                 print("     {}: Total minutes: {}".format(oPlayer.name, oPlayer.totalMins))
-        print("Player breakdown:")
-        team.print_player_minutes()
+        ## print("Player breakdown:")
+        ## team.print_player_minutes()
+
 
 def elo(score):
     return (1504.6 - (450 * (math.log10((1 / score) - 1))))

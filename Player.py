@@ -6,6 +6,7 @@ class Player:
         self.name = name
         self.team = team
         self.totalMins = totalMins
+        self.timeWeight = totalMins / 48
         self.positions = {}
         self.pace = pace
         self.dpm = None
