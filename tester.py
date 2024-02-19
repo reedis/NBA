@@ -1,6 +1,4 @@
-import Player
-import Teams
-import NBA
+from src import Player, NBA, Teams
 
 player1 = Player.Player("player1", "team1", 30, 5, 0, 0, 0, 2)
 player2 = Player.Player("player2", "team1", 25, 8, 15, 8, 0, 0)

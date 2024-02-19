@@ -1,4 +1,4 @@
-from Player import *
+from src.Player import *
 from Utils import similar, generateMinutesByPercent
 
 
