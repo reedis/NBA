@@ -40,9 +40,9 @@ from NBA import generate_season
 alpha = 15
 # this is a test push
 ## debug runs ONLY healthcheck when true
-debug = False
+debug = True
 ## testing allows for custom date in Building Analytics
-testing = True
+testing = False
 
 
 def main():

@@ -13,22 +13,35 @@ class Player:
         self.dpm = None
         self.odpm = None
         self.ddpm = None
+        self.playerPositionPercentage = []
         self.injury_bank = None
         self.injury_status = False
 
-    def populate_positions(self, pgMin, sgMin, sfMin, pfMin, cMin):
+    def populate_positions(self, pgMin, sgMin, sfMin, pfMin, cMin, playerPercentList):
         if pgMin != 0:
-            self.positions[Positions.PointGaurd] = pgMin
+            if Positions.PointGaurd not in self.positions:
+                self.positions[Positions.PointGaurd] = 0
+            self.positions[Positions.PointGaurd] += pgMin
         if sgMin != 0:
-            self.positions[Positions.ShootingGaurd] = sgMin
+            if Positions.ShootingGaurd not in self.positions:
+                self.positions[Positions.ShootingGaurd] = 0
+            self.positions[Positions.ShootingGaurd] += sgMin
         if sfMin != 0:
-            self.positions[Positions.SmallForward] = sfMin
+            if Positions.SmallForward not in self.positions:
+                self.positions[Positions.SmallForward] = 0
+            self.positions[Positions.SmallForward] += sfMin
         if pfMin != 0:
-            self.positions[Positions.PowerForward] = pfMin
+            if Positions.PowerForward not in self.positions:
+                self.positions[Positions.PowerForward] = 0
+            self.positions[Positions.PowerForward] += pfMin
         if cMin != 0:
-            self.positions[Positions.Center] = cMin
+            if Positions.Center not in self.positions:
+                self.positions[Positions.Center] = 0
+            self.positions[Positions.Center] += cMin
 
         self.injury_bank = self.positions
+        if len(playerPercentList) > 0:
+            self.playerPositionPercentage = playerPercentList
         return self
 
     def populate_dpms(self, dpm, odpm, ddpm):
@@ -79,12 +92,13 @@ def addPercentages(playerlist, percetageList):
         for index, row in percetageList.iterrows():
             if name_check(index, player.name):
                 playerMin = player.totalMins
+                playerPercentList = [row.iloc[1], row.iloc[2], row.iloc[3], row.iloc[4], row.iloc[5]]
                 pgMin = row.iloc[1] * playerMin
                 sgMin = row.iloc[2] * playerMin
                 sfMin = row.iloc[3] * playerMin
                 pfMin = row.iloc[4] * playerMin
                 cMin = row.iloc[5] * playerMin
-                newPlayer = player.populate_positions(pgMin, sgMin, sfMin, pfMin, cMin)
+                newPlayer = player.populate_positions(pgMin, sgMin, sfMin, pfMin, cMin, playerPercentList)
                 playerlist[playerCounter] = newPlayer
                 continue
         playerCounter += 1

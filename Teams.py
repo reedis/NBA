@@ -1,5 +1,5 @@
 from Player import *
-from Utils import similar
+from Utils import similar, generateMinutesByPercent
 
 
 class Team:
@@ -139,6 +139,7 @@ class Team:
 
         self.distributeMinutes(minsDict)
         self.set_player_teams()
+        self.smooth_team_minutes()
 
     def set_player_teams(self):
         for player in self.playerList:
@@ -188,6 +189,14 @@ class Team:
         for player in self.playerList:
             player.print_player()
         print('========================')
+
+    def smooth_team_minutes(self):
+        teamMinutesOver = 240 - self.totalPlayerMinutes
+        if teamMinutesOver > 0:
+            for player in self.activeRoster:
+                percentageList = generateMinutesByPercent(teamMinutesOver, self.totalPlayerMinutes, player.totalMins, player.playerPositionPercentage)
+                player.populate_positions(pgMin=percentageList[0], sgMin=percentageList[1], sfMin=percentageList[2], pfMin=percentageList[3], cMin=percentageList[4], playerPercentList=[])
+
 
 
 def create_teams(playerList):
