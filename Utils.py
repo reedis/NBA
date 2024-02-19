@@ -2,6 +2,7 @@ import Teams
 import NBA
 import Player
 import pandas as pd
+from difflib import SequenceMatcher
 
 
 def validateUser(userNumber):
@@ -56,7 +57,7 @@ def addPercentages(playerlist, percetageList):
     playerCounter = 0
     for player in playerlist:
         for index, row in percetageList.iterrows():
-            if index == player.name:
+            if name_check(index, player.name):
                 playerMin = player.totalMins
                 pgMin = row.iloc[1] * playerMin
                 sgMin = row.iloc[2] * playerMin
@@ -69,6 +70,13 @@ def addPercentages(playerlist, percetageList):
         playerCounter += 1
 
     return playerlist
+
+def name_check(name1, name2):
+    return ((
+            (similar(name1, name2) >= .9) or
+            (similar(name1, name2) == 0.8461538461538461)
+            ) and
+            ((not (similar(name1, name2) == 0.9333333333333333)) or ("Den" in name1)))
 
 
 
@@ -152,6 +160,9 @@ def cleanInjuryList(injuryList):
         outPlayers.append(Player.InjuredPlayer(playerName, player['Team'], player['Status']))
 
     return questionablePlayers, outPlayers
+
+def similar(a, b):
+    return SequenceMatcher(None, a, b).ratio()
 
 
 teamNamesConversionDict = {'ATL': 'Atlanta Hawks', 'BKN': 'Brooklyn Nets', 'BOS': 'Boston Celtics',

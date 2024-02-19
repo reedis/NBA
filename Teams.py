@@ -1,3 +1,5 @@
+from difflib import SequenceMatcher
+
 from Player import Player
 from Player import Positions
 
@@ -14,7 +16,10 @@ class Team:
         self.outMin = 0
         self.questionableMin = 0
         self.totalPlayerMinutes = 0
+        self.activeRoster = playersList
         self.playerList = playersList
+        self.outList = []
+        self.questionableList = []
         self.odpm = 0
         self.ddpm = 0
         self.dpm = 0
@@ -40,11 +45,22 @@ class Team:
     def avgDpm(self):
         return self.dpm / self.playerCount
 
-    def sum_minutes(self):
+    def sum_active_minutes(self):
         minutesSum = 0
-        for pos in self.roster:
-            for player in self.roster[pos]:
-                minutesSum += player.positions[pos]
+        for player in self.activeRoster:
+            minutesSum += player.totalMins
+        return minutesSum
+
+    def sum_questionable_player_min(self):
+        minutesSum = 0
+        for player in self.questionableList:
+            minutesSum += player.totalMins
+        return minutesSum
+
+    def sum_out_player_min(self):
+        minutesSum = 0
+        for player in self.outList:
+            minutesSum += player.totalMins
         return minutesSum
 
     def sort_roster(self):
@@ -55,7 +71,7 @@ class Team:
     def get_player(self, playerName):
         for position in self.roster:
             for player in self.roster[position]:
-                if player.name == playerName:
+                if similar(player.name, playerName) >= 0.9:
                     return player
 
     def apply_injuries(self, outList, qList):
@@ -70,6 +86,7 @@ class Team:
             outPlayer = self.get_player(injuredPlayer.name)
             if outPlayer is None:
                 continue
+            self.outList.append(outPlayer)
             playerInjuryMin = 0
             for position in outPlayer.positions:
                 if outPlayer.positions[position] != 0:
@@ -82,6 +99,11 @@ class Team:
                 for player in self.roster[position]:
                     if outPlayer.name == player.name:
                         self.roster[position].remove(player)
+
+            for player in self.activeRoster:
+                if player.name == outPlayer.name:
+                    self.activeRoster.remove(player)
+
             self.injuryMinutes[outPlayer.name] = playerInjuryMin
 
         ## Players who are questionable time's is halved and distributed
@@ -89,6 +111,7 @@ class Team:
             questionablePlayer = self.get_player(injuredPlayer.name)
             if questionablePlayer is None:
                 continue
+            self.questionableList.append(questionablePlayer)
             playerInjuryMin = 0
             editedPlayer = questionablePlayer
             for position in questionablePlayer.positions:
@@ -103,6 +126,10 @@ class Team:
                     if questionablePlayer.name == player:
                         self.roster[position].remove(player)
                         self.roster[position].append(editedPlayer)
+
+            for player in self.activeRoster:
+                if player.name == questionablePlayer.name:
+                    self.activeRoster.remove(player)
 
             self.injuryMinutes[questionablePlayer.name] = playerInjuryMin
 
@@ -157,3 +184,7 @@ class Team:
         for player in self.playerList:
             player.print_player()
         print('========================')
+
+
+def similar(a, b):
+    return SequenceMatcher(None, a, b).ratio()

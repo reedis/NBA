@@ -35,13 +35,6 @@ class Player:
         self.ddpm = ddpm
         return self
 
-    def summation_of_minutes(self):
-        minSum = 0
-        for position in self.positions:
-            minSum += self.positions[position]
-
-        return minSum
-
     def set_team(self, team):
         self.team = team
 
@@ -50,14 +43,13 @@ class Player:
         self.team.update_injury(self)
 
     def print_player(self):
-        first_string = "{}, total minutes: {}".format(self.name, self.totalMins)
+        first_string = "  {}, total minutes: {}".format(self.name, self.totalMins)
         pos_string = ""
         for position in self.positions:
-            temp_string = "{}: {} mins\n".format(position.name, self.positions[position])
+            temp_string = "     {}: {} mins\n".format(position.name, self.positions[position])
             pos_string += temp_string
-        pos_string = pos_string.strip()
         print(first_string)
-        print(pos_string.strip())
+        print(pos_string.rstrip())
         print('--------')
 
 class InjuredPlayer:

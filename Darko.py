@@ -38,21 +38,26 @@ from Utils import validateUser, generate_season, monthToDate
 alpha = 15
 # this is a test push
 debug = True
+testing = True
 
 
 def main():
     userIn = int(input("User 1 or 2: "))
     user = validateUser(userIn)
     month = input("Month: ")
+    if testing:
+        testDate = input("Date in format mm-dd-yyyy: ")
+    else:
+        testDate = ''
     season = generate_season(user, month)
-    if (debug):
+    if debug:
         healthCheck(season)
     else:
-        buildAnalytics(season)
+        buildAnalytics(season, testDate)
 
 
-def buildAnalytics(season):
-    today = date.today().strftime("%m-%d-%Y")
+def buildAnalytics(season, testDate):
+    today = testDate if testing else date.today().strftime("%m-%d-%Y")
     for day in season.schedule:
         if day.strip() == today.strip():
             todayGames = season.schedule[day]
@@ -74,9 +79,19 @@ def buildAnalytics(season):
 
 def healthCheck(season):
     for team in season.teams:
-        print("Team: {} ODPM: {}, DDPM: {}, total minutes: {}\n Players: ".format(team.name, team.odpm, team.ddpm, team.totalPlayerMinutes))
+        print("Team: {} ODPM: {}, DDPM: {}\n Players: ".format(team.name, team.odpm, team.ddpm))
+        print(" Active Roster, total active minutes: {}".format(team.sum_active_minutes()))
         for player in team.playerList:
-            print("     {}: Total minutes: {}, injured: {}".format(player.name, player.totalMins, player.injury_status))
+            print("     {}: Total minutes: {}, ODPM: {}, DDPM: {},".format(player.name, player.totalMins, player.odpm, player.ddpm))
+        if len(team.questionableList) != 0:
+            print(" Questionable Players, total questionable minutes: {}".format(team.sum_questionable_player_min()))
+            for qPlayer in team.questionableList:
+                print("     {}: Total minutes: {}".format(qPlayer.name, qPlayer.totalMins))
+        if len(team.outList) != 0:
+            print(" Out Players, total out minutes: {}".format(team.sum_out_player_min()))
+            for oPlayer in team.outList:
+                print("     {}: Total minutes: {}".format(oPlayer.name, oPlayer.totalMins))
+        print("Player breakdown:")
         team.print_player_minutes()
 
 def elo(score):
