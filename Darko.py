@@ -20,6 +20,8 @@ from Utils import validateUser, generate_season, monthToDate
 #    (Key:Value) = (TeamName: (AvgODPM, AvgDDPM))         #
 ##-------------------------------------------------------##
 
+## SHEET ID: 1IXsvtJ3QBEvqS16Z7SIy9PRCWEDzcNybT94R0Jf9SSo
+
 ######################## LINKS ############################
 # schedule link = https://www.basketball-reference.com/leagues/NBA_2024_games-december.html
 # DPM/Min link = https://apanalytics.shinyapps.io/DARKO/
@@ -37,8 +39,10 @@ from Utils import validateUser, generate_season, monthToDate
 
 alpha = 15
 # this is a test push
-debug = True
-testing = False
+## debug runs ONLY healthcheck when true
+debug = False
+## testing allows for custom date in Building Analytics
+testing = True
 
 
 def main():
@@ -73,12 +77,12 @@ def buildAnalytics(season, testDate):
                                                                                game.home.questionableMin))
                 print("{} total team minutes: {}, total-adjusted minutes {}".format(game.home.name,
                                                                                     game.home.totalPlayerMinutes,
-                                                                                    game.home.sum_minutes()))
+                                                                                    game.home.sum_active_minutes()))
                 print("{} OUT-Injury minutes: {}, Q-Injury minutes: {}".format(game.away.name, game.away.outMin,
                                                                                game.away.questionableMin))
                 print("{} total team minutes: {}, total-adjusted minutes {}".format(game.away.name,
                                                                                     game.away.totalPlayerMinutes,
-                                                                                    game.away.sum_minutes()))
+                                                                                    game.away.sum_active_minutes()))
                 print(buildROI(homeWin))
                 print('----------')
     return
