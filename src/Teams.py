@@ -32,7 +32,9 @@ class Team:
             self.ddpm += player.ddpm * player.timeWeight
             for position in player.positions:
                 self.totalPlayerMinutes += player.positions[position]
-                self.roster[position].append(player)
+                for pos in self.roster.keys():
+                    if pos.name == position.name:
+                        self.roster[pos].append(player)
 
     def avgOdpm(self):
         return self.odpm / self.playerCount
@@ -91,10 +93,13 @@ class Team:
             playerInjuryMin = 0
             for position in outPlayer.positions:
                 if outPlayer.positions[position] != 0:
-                    minsDict[position] += outPlayer.positions[position]
-                    playerInjuryMin += outPlayer.positions[position]
-                    self.outMin += outPlayer.positions[position]
-                    outPlayer.positions[position] = 0
+                    for pos in minsDict.keys():
+                        if pos.name == position.name:
+                            minsDict[pos] += outPlayer.positions[position]
+                            playerInjuryMin += outPlayer.positions[position]
+                            self.outMin += outPlayer.positions[position]
+                            outPlayer.positions[position] = 0
+                        break
 
             for position in self.roster:
                 for player in self.roster[position]:
@@ -120,10 +125,12 @@ class Team:
             editedPlayer = questionablePlayer
             for position in questionablePlayer.positions:
                 if questionablePlayer.positions[position] != 0:
-                    minsDict[position] += (questionablePlayer.positions[position] / 2)
-                    playerInjuryMin += (questionablePlayer.positions[position] / 2)
-                    self.questionableMin += (questionablePlayer.positions[position] / 2)
-                    editedPlayer.positions[position] = (questionablePlayer.positions[position] / 2)
+                    for pos in minsDict.keys():
+                        if pos.name == position.name:
+                            minsDict[pos] += (questionablePlayer.positions[position] / 2)
+                            playerInjuryMin += (questionablePlayer.positions[position] / 2)
+                            self.questionableMin += (questionablePlayer.positions[position] / 2)
+                            editedPlayer.positions[position] = (questionablePlayer.positions[position] / 2)
 
             for position in self.roster:
                 for player in self.roster[position]:
@@ -169,12 +176,16 @@ class Team:
                     if player.totalMins < 30:
                         minDiff = 30 - player.totalMins
                         if minDiff <= minutesToAdd:
-                            player.positions[position] += minDiff
-                            player.totalMins += minDiff
-                            minutesToAdd -= minDiff
+                            for pos in player.positions.keys():
+                                if pos.name == position.name:
+                                    player.positions[pos] += minDiff
+                                    player.totalMins += minDiff
+                                    minutesToAdd -= minDiff
                         else:
-                            player.positions[position] += minutesToAdd
-                            minutesToAdd = 0
+                            for pos in player.positions.keys():
+                                if pos.name == position.name:
+                                    player.positions[pos] += minutesToAdd
+                                    minutesToAdd = 0
                 ## this is to avoid a possible infinite recursion edge case
                 ##      need to follow up on what the expected behavior
                 break

@@ -44,8 +44,7 @@ def generateMinutesByPercent(minutesOver, teamMinutes, totalPlayerMinutes, playe
     minutesToDistribute = minutesOver * (40 - totalPlayerMinutes) / teamMinutes
     if not playerPercentage:
         playerPercentage = [.2, .2, .2, .2, .2]
-    for i in range(0, 4):
-        print(i)
+    for i in range(0, 5):
         playerMinutesList[i] += minutesToDistribute * playerPercentage[i]
 
     return playerMinutesList

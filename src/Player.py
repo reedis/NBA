@@ -42,6 +42,9 @@ class Player:
         self.injury_bank = self.positions
         if len(playerPercentList) > 0:
             self.playerPositionPercentage = playerPercentList
+        else:
+            self.totalMins += pfMin + pgMin + sgMin + sfMin + cMin
+
         return self
 
     def populate_dpms(self, dpm, odpm, ddpm):
