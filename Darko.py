@@ -1,7 +1,7 @@
-import pandas as pd
 from datetime import date
 import math
-from Utils import validateUser, generate_season, monthToDate
+from Utils import validateUser, monthToDate
+from NBA import generate_season
 
 ##-------------------------------------------------------##
 #                 Dictionary Structures:                  #
@@ -170,7 +170,7 @@ def dpmPerPlayer(frame):
     teamList = frame.index
     for item in teamList:
         if item in teamsDict:
-            next
+            continue
         else:
             teamsDict[item] = []
     for index, row in frame.iterrows():

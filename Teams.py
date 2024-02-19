@@ -1,7 +1,5 @@
-from difflib import SequenceMatcher
-
-from Player import Player
-from Player import Positions
+from Player import *
+from Utils import similar
 
 
 class Team:
@@ -192,5 +190,22 @@ class Team:
         print('========================')
 
 
-def similar(a, b):
-    return SequenceMatcher(None, a, b).ratio()
+def create_teams(playerList):
+    playerList = sorted(playerList, key=lambda p: p.team)
+    teamsLists = []
+    teamList = []
+    teamName = playerList[0].team
+    for player in playerList:
+        if player.team == teamName:
+            teamList.append(player)
+        else:
+            teamName = player.team
+            teamsLists.append(teamList)
+            teamList = [player]
+    teamList.append(playerList[-1:][0])
+    teamsLists.append(teamList)
+    teams = []
+    for team in teamsLists:
+        teams.append(Team(team, team[0].team))
+
+    return teams

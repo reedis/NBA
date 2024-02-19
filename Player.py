@@ -1,4 +1,5 @@
 from enum import Enum
+from Utils import name_check, teamNamesConversionDict
 
 
 class Player:
@@ -39,7 +40,7 @@ class Player:
     def set_team(self, team):
         self.team = team
 
-    def update_injury(self, update):
+    def update_injury(self):
         self.positions = self.injury_bank
         self.team.update_injury(self)
 
@@ -53,11 +54,64 @@ class Player:
         print(pos_string.rstrip())
         print('--------')
 
+
+def create_players(minutesDF):
+    playerList = []
+    for index, row in minutesDF.iterrows():
+        playerList.append(Player(row['Player'], index, row['Minutes'], row['Pace']))
+    return playerList
+
+
+def add_dpms(playerDf, playerList):
+    for index, row in playerDf.iterrows():
+        playerPosCount = 0
+        for player in playerList:
+            if player.name == index:
+                newPlayer = player.populate_dpms(row['DPM'], row['O-DPM'], row['D-DPM'])
+                playerList[playerPosCount] = newPlayer
+            playerPosCount += 1
+    return playerList
+
+
+def addPercentages(playerlist, percetageList):
+    playerCounter = 0
+    for player in playerlist:
+        for index, row in percetageList.iterrows():
+            if name_check(index, player.name):
+                playerMin = player.totalMins
+                pgMin = row.iloc[1] * playerMin
+                sgMin = row.iloc[2] * playerMin
+                sfMin = row.iloc[3] * playerMin
+                pfMin = row.iloc[4] * playerMin
+                cMin = row.iloc[5] * playerMin
+                newPlayer = player.populate_positions(pgMin, sgMin, sfMin, pfMin, cMin)
+                playerlist[playerCounter] = newPlayer
+                continue
+        playerCounter += 1
+
+    return playerlist
+
+
 class InjuredPlayer:
     def __init__(self, name, team, status):
         self.name = name
         self.team = team
         self.status = status
+
+
+def cleanInjuryList(injuryList):
+    questionablePlayers = []
+    outPlayers = []
+    injuryList['Team'] = injuryList['Team'].apply(lambda name: teamNamesConversionDict[name])
+    qList = injuryList[injuryList['Status'] == 'Game Time Decision']
+    outList = injuryList[injuryList['Status'] != 'Game Time Decision']
+    for playerName, player in qList.iterrows():
+        questionablePlayers.append(InjuredPlayer(playerName, player['Team'], player['Status']))
+
+    for playerName, player in outList.iterrows():
+        outPlayers.append(InjuredPlayer(playerName, player['Team'], player['Status']))
+
+    return questionablePlayers, outPlayers
 
 
 class Positions(Enum):
