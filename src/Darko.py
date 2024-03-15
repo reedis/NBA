@@ -129,7 +129,3 @@ def buildROI(homeP):
     else:
         return (alpha + ((1 - homeP) * 100)) / (homeP), ((1 - homeP) * 10000) / ((1 - homeP) * 100 - 100 - alpha)
 
-
-
-
-#main()

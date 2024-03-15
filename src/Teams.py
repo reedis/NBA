@@ -35,7 +35,7 @@ class Team:
                 for pos in self.roster.keys():
                     if pos.name == position.name:
                         self.roster[pos].append(player)
-
+        self.totalPlayerMinutes = self.totalPlayerMinutes.__floor__()
         assert self.totalPlayerMinutes <= 240, "Team minutes must be less than 240, team minutes: {}".format(self.totalPlayerMinutes)
 
     def avgOdpm(self):
