@@ -81,7 +81,7 @@ def generate_generic_team(teamName):
 
     playerList.sort(key=lambda x: x.totalMins, reverse=True)
 
-    return Teams.Team(playerList, teamName)
+    return Teams.Team(playerList, teamName).smooth_team_minutes()
 
 
 def generate_random_pos_list():

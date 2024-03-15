@@ -45,7 +45,7 @@ class Player:
         if len(playerPercentList) > 0:
             self.playerPositionPercentage = list(playerPercentList)
         self.totalMins = self.sum_playerMinutes()
-        assert self.totalMins < 40, "Player minutes cannot be greater than 40"
+        assert self.totalMins < 40, "Player minutes cannot be greater than 40, minutes: {}".format(self.totalMins)
         return self
 
     # sums player minutes from the position dictionary

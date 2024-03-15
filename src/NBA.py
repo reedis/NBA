@@ -1,6 +1,6 @@
 import pandas as pd
-from Player import create_players, add_dpms, addPercentages
-from Teams import create_teams, cleanInjuryList
+from src.Player import create_players, add_dpms, addPercentages
+from src.Teams import create_teams, cleanInjuryList
 from Utils import cleanedPos
 
 

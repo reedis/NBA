@@ -36,6 +36,8 @@ class Team:
                     if pos.name == position.name:
                         self.roster[pos].append(player)
 
+        assert self.totalPlayerMinutes <= 240, "Team minutes must be less than 240, team minutes: {}".format(self.totalPlayerMinutes)
+
     def avgOdpm(self):
         return self.odpm / self.playerCount
 
@@ -168,27 +170,28 @@ class Team:
         self.populate_roster([player])
         self.playerList.append(player)
 
+
+    # distributes minutes taken by injury to each affected position
     def distributeMinutes(self, minutesDict):
+        updatedPlayerList = []
         for position in self.roster:
             minutesToAdd = minutesDict[position]
-            while minutesToAdd > 0:
+            while minutesToAdd > 1:
                 for player in self.roster[position]:
                     if player.totalMins < 30:
                         minDiff = 30 - player.totalMins
-                        if minDiff <= minutesToAdd:
-                            for pos in player.positions.keys():
-                                if pos.name == position.name:
-                                    player.positions[pos] += minDiff
-                                    player.totalMins += minDiff
-                                    minutesToAdd -= minDiff
-                        else:
-                            for pos in player.positions.keys():
-                                if pos.name == position.name:
-                                    player.positions[pos] += minutesToAdd
-                                    minutesToAdd = 0
-                ## this is to avoid a possible infinite recursion edge case
-                ##      need to follow up on what the expected behavior
+                        if minDiff >= minutesToAdd:
+                            minDiff = minutesToAdd
+                        for pos in player.positions.keys():
+                            if pos.name == position.name:
+                                player.positions[pos] += minDiff
+                                player.totalMins += minDiff
+                                minutesToAdd -= minDiff
+                                updatedPlayerList.append(player)
+
                 break
+        for player in updatedPlayerList:
+            self.update_player(player)
 
     def update_injury(self, player):
         self.remove_player(player.name)
@@ -206,12 +209,9 @@ class Team:
         updatedPlayerList = []
         teamMinutesOver = 240 - self.totalPlayerMinutes
         while teamMinutesOver >= 1:
-            print('minutesLeftToSmooth: {}'.format(teamMinutesOver))
             for player in self.activeRoster:
                 percentageList, sumMinutes = generateMinutesByPercent(teamMinutesOver, player.totalMins,
                                                                       player.playerPositionPercentage)
-                print('name: {}, playerMinutes: {}, minutesToAdd: {}, posList: {}'.format(player.name, player.totalMins,
-                                                                                         sumMinutes, percentageList))
                 # Only add to players who have minutes to spare
                 if (sumMinutes + player.totalMins) < 40 and sumMinutes > 0:
                     updatedPlayerList.append(
@@ -231,13 +231,17 @@ class Team:
         self.fix_total_player_minutes()
         return self
 
+    # Recalculates a teams total minutes
     def fix_total_player_minutes(self):
         minutesSum = 0
         for player in self.activeRoster:
             minutesSum += player.totalMins
 
-        self.totalPlayerMinutes = minutesSum
+        self.totalPlayerMinutes = minutesSum.__floor__()
+        assert self.totalPlayerMinutes <= 240
 
+
+    # updates a player in all places for a team
     def update_player(self, player):
         index = 0
         for oldPlayer in self.activeRoster:

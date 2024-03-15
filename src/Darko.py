@@ -1,7 +1,7 @@
 from datetime import date
 import math
 from Utils import validateUser, monthToDate
-from NBA import generate_season
+from src.NBA import generate_season
 
 ##-------------------------------------------------------##
 #                 Dictionary Structures:                  #
@@ -132,4 +132,4 @@ def buildROI(homeP):
 
 
 
-main()
+#main()
