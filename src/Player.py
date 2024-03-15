@@ -17,6 +17,8 @@ class Player:
         self.injury_bank = None
         self.injury_status = False
 
+    # Populates the position dictionary for the player only with the positions they actually play minutes for
+    # Also populates the injury bank, the playerPositionPercentage list, and player total minutes
     def populate_positions(self, pgMin, sgMin, sfMin, pfMin, cMin, playerPercentList):
         if pgMin != 0:
             if Positions.PointGaurd not in self.positions:
@@ -41,11 +43,17 @@ class Player:
 
         self.injury_bank = self.positions
         if len(playerPercentList) > 0:
-            self.playerPositionPercentage = playerPercentList
-        else:
-            self.totalMins += pfMin + pgMin + sgMin + sfMin + cMin
-
+            self.playerPositionPercentage = list(playerPercentList)
+        self.totalMins = self.sum_playerMinutes()
+        assert self.totalMins < 40, "Player minutes cannot be greater than 40"
         return self
+
+    # sums player minutes from the position dictionary
+    def sum_playerMinutes(self):
+        sumMinutes = 0
+        for position in self.positions:
+            sumMinutes += self.positions[position]
+        return sumMinutes
 
     def populate_dpms(self, dpm, odpm, ddpm):
         self.dpm = dpm
@@ -71,6 +79,7 @@ class Player:
         print('--------')
 
 
+# creates a list of Players without their positions/times/dpms populated
 def create_players(minutesDF):
     playerList = []
     for index, row in minutesDF.iterrows():
@@ -78,6 +87,7 @@ def create_players(minutesDF):
     return playerList
 
 
+# Adds player DPM, ODPM, DDPM, to each player in the list from the DataFrame
 def add_dpms(playerDf, playerList):
     for index, row in playerDf.iterrows():
         playerPosCount = 0
@@ -89,6 +99,7 @@ def add_dpms(playerDf, playerList):
     return playerList
 
 
+# calculates the minutes per position for a player and populates the positon/time dictionary and total minutes
 def addPercentages(playerlist, percetageList):
     playerCounter = 0
     for player in playerlist:

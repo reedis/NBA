@@ -39,15 +39,21 @@ def cleanedPos(positionDf):
     return positionDf
 
 
-def generateMinutesByPercent(minutesOver, teamMinutes, totalPlayerMinutes, playerPercentage):
+def generateMinutesByPercent(minutesOver, totalPlayerMinutes, playerPercentage):
     playerMinutesList = [0, 0, 0, 0, 0]
-    minutesToDistribute = minutesOver * (40 - totalPlayerMinutes) / teamMinutes
+    sumMinute = 0
+    playerMinutesLeftOpen = 39 - totalPlayerMinutes
+    if playerMinutesLeftOpen > minutesOver:
+        playerMinutesLeftOpen = minutesOver
     if not playerPercentage:
         playerPercentage = [.2, .2, .2, .2, .2]
     for i in range(0, 5):
-        playerMinutesList[i] += minutesToDistribute * playerPercentage[i]
+        percentageMins = playerMinutesLeftOpen * playerPercentage[i]
+        playerMinutesList[i] += percentageMins
+        sumMinute += percentageMins
 
-    return playerMinutesList
+    return playerMinutesList, sumMinute
+
 
 def similar(a, b):
     return SequenceMatcher(None, a, b).ratio()

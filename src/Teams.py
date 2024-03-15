@@ -156,7 +156,7 @@ class Team:
         for position in self.roster:
             for player in self.roster[position]:
                 if player.name == playerName:
-                    self.roster.pop(player)
+                    self.roster[position].pop(player)
                     break
 
         for player in self.playerList:
@@ -201,15 +201,59 @@ class Team:
             player.print_player()
         print('========================')
 
+    # Smooths a team minutes to be 240
     def smooth_team_minutes(self):
+        updatedPlayerList = []
         teamMinutesOver = 240 - self.totalPlayerMinutes
-        if teamMinutesOver > 0:
+        while teamMinutesOver >= 1:
+            print('minutesLeftToSmooth: {}'.format(teamMinutesOver))
             for player in self.activeRoster:
-                percentageList = generateMinutesByPercent(teamMinutesOver, self.totalPlayerMinutes, player.totalMins, player.playerPositionPercentage)
-                player.populate_positions(pgMin=percentageList[0], sgMin=percentageList[1], sfMin=percentageList[2], pfMin=percentageList[3], cMin=percentageList[4], playerPercentList=[])
+                percentageList, sumMinutes = generateMinutesByPercent(teamMinutesOver, player.totalMins,
+                                                                      player.playerPositionPercentage)
+                print('name: {}, playerMinutes: {}, minutesToAdd: {}, posList: {}'.format(player.name, player.totalMins,
+                                                                                         sumMinutes, percentageList))
+                # Only add to players who have minutes to spare
+                if (sumMinutes + player.totalMins) < 40 and sumMinutes > 0:
+                    updatedPlayerList.append(
+                        player.populate_positions(
+                            pgMin=percentageList[0],
+                            sgMin=percentageList[1],
+                            sfMin=percentageList[2],
+                            pfMin=percentageList[3],
+                            cMin=percentageList[4],
+                            playerPercentList=[]
+                        )
+                    )
+                    teamMinutesOver -= sumMinutes
+        for player in updatedPlayerList:
+            self.update_player(player)
+
+        self.fix_total_player_minutes()
+        return self
+
+    def fix_total_player_minutes(self):
+        minutesSum = 0
+        for player in self.activeRoster:
+            minutesSum += player.totalMins
+
+        self.totalPlayerMinutes = minutesSum
+
+    def update_player(self, player):
+        index = 0
+        for oldPlayer in self.activeRoster:
+            if oldPlayer.name == player.name:
+                self.activeRoster[index] = player
+            index += 1
+        index = 0
+        for pos in self.roster.keys():
+            for playerOld in self.roster[pos]:
+                if playerOld.name == player.name:
+                    self.roster[pos].pop(index)
+                    self.roster[pos].append(player)
+        return self
 
 
-
+# Creates a list of teams with the player list populated
 def create_teams(playerList):
     playerList = sorted(playerList, key=lambda p: p.team)
     teamsLists = []
